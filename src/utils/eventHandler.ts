@@ -8,12 +8,13 @@ export const handleEvents = async (client: Client) => {
 
     for (const file of eventFiles) {
         const filePath = path.join(eventsPath, file);
-        const event = await import(filePath);
+        const event = (await import(filePath)).default;
         
         if (event.once) {
             client.once(event.name, (...args) => event.execute(...args));
         } else {
             client.on(event.name, (...args) => event.execute(...args));
         }
+        console.log(`Registered event: ${event.name}`);
     }
 }; 

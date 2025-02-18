@@ -1,6 +1,6 @@
 # Discord Bot V2
 
-Discord bot được xây dựng với Discord.js và TypeScript, sử dụng clean architecture và best practices.
+Discord bot được xây dựng với Discord.js và TypeScript.
 
 ## Tính năng
 
