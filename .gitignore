@@ -205,3 +205,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Discord
+*.zip

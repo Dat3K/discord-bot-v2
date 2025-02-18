@@ -1,7 +1,10 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, Colors } from 'discord.js';
 import type { Command } from '../types/command';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { format as formatTz, toZonedTime } from 'date-fns-tz';
+
+const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 const command: Command = {
     data: new SlashCommandBuilder()
@@ -15,10 +18,23 @@ const command: Command = {
             addSuffix: true 
         });
 
+        // Lấy thời gian hiện tại theo múi giờ Việt Nam
+        const now = new Date();
+        const vnTime = toZonedTime(now, VN_TIMEZONE);
+        const currentTime = formatTz(vnTime, 'HH:mm:ss - EEEE, dd/MM/yyyy', { 
+            timeZone: VN_TIMEZONE,
+            locale: vi 
+        });
+
         const embed = new EmbedBuilder()
             .setTitle('📊 Trạng thái Bot')
             .setColor(Colors.Green)
             .addFields([
+                {
+                    name: '🕒 Thời gian hiện tại',
+                    value: currentTime,
+                    inline: false
+                },
                 {
                     name: '⏱️ Thời gian hoạt động',
                     value: uptime,

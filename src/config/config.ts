@@ -58,6 +58,18 @@ if (!process.env.DEV_MODE) {
     throw new Error('DEV_MODE is required in .env file');
 }
 
+if (!process.env.MEAL_CHANNEL_ID) {
+    throw new Error('MEAL_CHANNEL_ID is required in .env file');
+}
+
+if (!process.env.LATE_CHANNEL_ID) {
+    throw new Error('LATE_CHANNEL_ID is required in .env file');
+}
+
+if (!process.env.MAIN_CHANNEL_ID) {
+    throw new Error('MAIN_CHANNEL_ID is required in .env file');
+}
+
 export const config: Config = {
     token: process.env.DISCORD_BOT_TOKEN,
     clientId: process.env.CLIENT_ID,
@@ -65,7 +77,7 @@ export const config: Config = {
     scheduledMessages: [
         {
             id: 'notice-meal-registration',
-            channelId: process.env.TEST_CHANNEL_ID as string,
+            channelId: process.env.MAIN_CHANNEL_ID as string,
             cronExpression: '0 */6 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
@@ -78,7 +90,7 @@ export const config: Config = {
         },
         {
             id: 'morning-late-registration',
-            channelId: process.env.TEST_CHANNEL_ID as string,
+            channelId: process.env.LATE_CHANNEL_ID as string,
             cronExpression: '0 5 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
@@ -103,7 +115,7 @@ export const config: Config = {
         },
         {
             id: 'night-late-registration',
-            channelId: process.env.TEST_CHANNEL_ID as string,
+            channelId: process.env.LATE_CHANNEL_ID as string,
             cronExpression: '0 12 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
@@ -128,7 +140,7 @@ export const config: Config = {
         },
         {
             id: 'meal-registration',
-            channelId: process.env.TEST_CHANNEL_ID as string,
+            channelId: process.env.MEAL_CHANNEL_ID as string,
             cronExpression: '0 5 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
