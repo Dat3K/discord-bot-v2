@@ -1,4 +1,4 @@
-import { Client, Events, TextChannel } from 'discord.js';
+import { Client, Events, TextChannel, EmbedBuilder } from 'discord.js';
 import { config } from '../config/config';
 import * as cron from 'node-cron';
 
@@ -6,7 +6,7 @@ const scheduleMessages = (client: Client) => {
     const jobs: cron.ScheduledTask[] = [];
 
     try {
-        config.scheduledMessages.forEach(({ id, channelId, cronExpression, message, timezone, enabled }) => {
+        config.scheduledMessages.forEach(({ id, channelId, cronExpression, embed, timezone, enabled, message }) => {
             if (!enabled) {
                 console.log(`Message ${id} is disabled, skipping...`);
                 return;
@@ -20,7 +20,23 @@ const scheduleMessages = (client: Client) => {
             const job = cron.schedule(cronExpression, () => {
                 const channel = client.channels.cache.get(channelId);
                 if (channel instanceof TextChannel) {
-                    channel.send(message)
+                    const now = new Date();
+                    const title = eval('`' + embed.title + '`'); // Evaluate the template string
+                    
+                    const embedMessage = new EmbedBuilder()
+                        .setTitle(title)
+                        .setDescription(embed.description)
+                        .setColor(embed.color)
+                        .setTimestamp(now);
+
+                    if (embed.fields) {
+                        embedMessage.addFields(embed.fields);
+                    }
+
+                    channel.send({ 
+                        content: message || '',
+                        embeds: [embedMessage] 
+                    })
                         .then(() => console.log(`Successfully sent scheduled message: ${id}`))
                         .catch(error => console.error(`Failed to send scheduled message ${id}:`, error));
                 } else {

@@ -1,11 +1,11 @@
-import { Events, Message, TextChannel } from 'discord.js';
+import { Events, Message, TextChannel, EmbedBuilder } from 'discord.js';
 import { reactionTracker } from '../services';
 import { add, format, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
 const TRACK_EMOJI = '📊';
 const DEFAULT_DURATION = { days: 1 }; // 24 giờ mặc định
-const DEFAULT_EMOJIS = ['👍', '👎']; // Emoji mặc định để theo dõi
+const DEFAULT_EMOJIS = ['🌞', '🌚']; // Emoji mặc định để theo dõi
 
 interface Duration {
     days?: number;
@@ -15,24 +15,34 @@ interface Duration {
 }
 
 const parseTrackingTime = (content: string): Duration => {
-    // Tìm pattern như [1h], [2d], [30m], [45s]
-    const timeMatch = content.match(/\[(\d+)([hmds])\]/i);
-    if (!timeMatch) return DEFAULT_DURATION;
+    // Tìm tất cả các pattern thời gian như [6h15m], [1h30m], [2d6h]
+    const timePattern = /\[(\d+[hmds])+\]/i;
+    const match = content.match(timePattern);
+    
+    if (!match) return DEFAULT_DURATION;
 
-    const [_, amount, unit] = timeMatch;
-    const value = parseInt(amount);
-
-    switch (unit.toLowerCase()) {
-        case 'h': return { hours: value };
-        case 'd': return { days: value };
-        case 'm': return { minutes: value };
-        case 's': return { seconds: value };
-        default: return DEFAULT_DURATION;
-    }
+    const duration: Duration = {};
+    const timeString = match[0];
+    
+    // Tách các số và đơn vị
+    const timeUnits = timeString.match(/\d+[hmds]/gi) || [];
+    
+    timeUnits.forEach(unit => {
+        const value = parseInt(unit);
+        const type = unit.slice(-1).toLowerCase();
+        
+        switch (type) {
+            case 'h': duration.hours = value; break;
+            case 'd': duration.days = value; break;
+            case 'm': duration.minutes = value; break;
+            case 's': duration.seconds = value; break;
+        }
+    });
+    
+    return Object.keys(duration).length > 0 ? duration : DEFAULT_DURATION;
 };
 
 const parseEmojis = (content: string): string[] => {
-    // Tìm pattern như [emoji:👍,👎] hoặc [emojis:😊,😄]
     const emojiMatch = content.match(/\[emojis?:([\p{Emoji},\s]+)\]/u);
     if (!emojiMatch) return DEFAULT_EMOJIS;
 
@@ -59,9 +69,6 @@ export default {
     name: Events.MessageCreate,
     once: false,
     async execute(message: Message) {
-        // Bỏ qua tin nhắn từ bot
-        if (message.author.bot) return;
-
         // Kiểm tra xem tin nhắn có chứa ký hiệu track không
         if (!message.content.includes('[track]') && !message.content.includes(TRACK_EMOJI)) return;
 
@@ -69,7 +76,6 @@ export default {
             // Tính thời gian theo dõi từ nội dung tin nhắn
             const duration = parseTrackingTime(message.content);
             const endTime = add(new Date(), duration);
-            const timeDescription = getTimeDescription(duration);
             const emojis = parseEmojis(message.content);
 
             // Tạo mô tả từ nội dung tin nhắn
@@ -80,32 +86,24 @@ export default {
                 .replace(/\[emojis?:[\p{Emoji},\s]+\]/u, '')
                 .trim();
 
-            // Tạo tracker cho mỗi emoji
-            const trackers = await Promise.all(emojis.map(emoji =>
-                reactionTracker.createTracker({
-                    messageId: message.id,
-                    channelId: message.channelId,
-                    guildId: message.guildId || '',
-                    emoji,
-                    endTime,
-                    description: description || 'Theo dõi phản hồi'
-                })
-            ));
-
-            if (trackers.some(t => t) && message.channel instanceof TextChannel) {
-                const formattedEndTime = formatEndTime(endTime);
-                await message.channel.send([
-                    '**Bắt đầu theo dõi reactions**',
-                    `📝 Mô tả: ${description || 'Theo dõi phản hồi'}`,
-                    `⏱️ Thời gian theo dõi: ${timeDescription}`,
-                    `⌛ Kết thúc: ${formattedEndTime}`,
-                    `👥 Reactions: ${emojis.join(' ')}`
-                ].join('\n'));
-            }
+            // Tạo một tracker duy nhất cho tất cả emoji
+            await reactionTracker.createTracker({
+                messageId: message.id,
+                channelId: message.channelId,
+                guildId: message.guildId || '',
+                emoji: emojis.join(','),
+                endTime,
+                description: description || 'Theo dõi phản hồi'
+            });
         } catch (error) {
             console.error('Error creating auto tracker:', error);
             if (message.channel instanceof TextChannel) {
-                await message.channel.send('❌ Có lỗi xảy ra khi tạo theo dõi reaction.');
+                const errorEmbed = new EmbedBuilder()
+                    .setTitle('❌ Lỗi')
+                    .setDescription('Có lỗi xảy ra khi tạo theo dõi reaction.')
+                    .setColor('#ff0000');
+                    
+                await message.channel.send({ embeds: [errorEmbed] });
             }
         }
     },
