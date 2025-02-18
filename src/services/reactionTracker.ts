@@ -47,7 +47,7 @@ class ReactionTrackerService {
         formattedDuration: string
     ): Promise<EmbedBuilder> {
         const embed = new EmbedBuilder()
-            .setTitle('📊 Kết quả bình chọn')
+            .setTitle('📝 Danh sách đăng ký')
             .setDescription(tracker.messageData.description)
             .setColor(EMBED_COLORS.SUCCESS)
             .setTimestamp()
@@ -55,8 +55,8 @@ class ReactionTrackerService {
 
         // Thêm trường tổng số người tham gia
         embed.addFields({
-            name: '👥 Tổng số người tham gia',
-            value: `${totalParticipants} người`,
+            name: '👨‍🎓 Tổng số người đăng ký',
+            value: `\n${totalParticipants} người`,
             inline: false
         });
 
@@ -79,15 +79,14 @@ class ReactionTrackerService {
 
             const participantsList = participants.length > 0
                 ? participants.map((p, i) => `${i + 1}. ${p}`).join('\n')
-                : '*Không có người tham gia*';
+                : '*Không có người đăng ký*';
 
             embed.addFields({
                 name: `${emoji} - ${participants.length} người (${percentage}%)`,
                 value: participantsList,
-                inline: false
+                inline: true
             });
         }
-
         return embed;
     }
 
