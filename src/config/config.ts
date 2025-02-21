@@ -144,7 +144,7 @@ export const config: Config = {
             cronExpression: '0 5 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
-            message: `Đăng ký cơm cho ngày mai! 📅 ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌞,🌚][11h]' : '[track][emojis:🌞,🌚][10s]'}`,
+            message: `Đăng ký cơm cho ngày mai! 📅 ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌞,🌚][22h]' : '[track][emojis:🌞,🌚][10s]'}`,
             embed: {
                 title: `🍽️ Đăng ký cơm ngày mai ngày ${formatDateTime(new Date(new Date().setDate(new Date().getDate() + 1)))}`,
                 description: 'Đăng ký cơm cho ngày mai',

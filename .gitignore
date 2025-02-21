@@ -208,3 +208,6 @@ Thumbs.db
 
 # Discord
 *.zip
+
+# Cursor
+.cursor

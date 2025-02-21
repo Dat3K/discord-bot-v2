@@ -65,8 +65,9 @@ class ReactionTrackerService {
             const participants = await Promise.all(
                 emojiTracker.participants.map(async (userId) => {
                     try {
-                        const user = await this.client.users.fetch(userId);
-                        return user.tag;
+                        const guild = await this.client.guilds.fetch(tracker.messageData.guildId);
+                        const member = await guild.members.fetch(userId);
+                        return member.nickname || member.user.username;
                     } catch {
                         return userId;
                     }
