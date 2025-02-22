@@ -1,15 +1,14 @@
 import dotenv from 'dotenv';
-import { EmbedBuilder, Colors } from 'discord.js';
-import { format, toZonedTime } from 'date-fns-tz';
+import {Colors } from 'discord.js';
+import { format } from 'date-fns-tz';
 import { vi } from 'date-fns/locale';
 
 dotenv.config();
 
 const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
-const formatDateTime = (date: Date): string => {
-    const vnTime = toZonedTime(date, VN_TIMEZONE);
-    return format(vnTime, 'dd/MM/yyyy - HH:mm', { timeZone: VN_TIMEZONE, locale: vi });
+const formatTime = (date: Date): string => {
+    return format(date, 'dd/MM', { timeZone: VN_TIMEZONE, locale: vi });
 };
 
 interface ScheduledMessage {
@@ -81,9 +80,9 @@ export const config: Config = {
             cronExpression: '0 */6 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
-            message: `Anh em đăng ký cơm nào <@&${process.env.AE_ROLE_ID}>`,
+            message: `Anh em vào đăng ký cơm nào <@&${process.env.AE_ROLE_ID}>`,
             embed: {
-                title: `🍽️ Đăng ký cơm ngày ${formatDateTime(new Date())}`,
+                title: `🍽️ Đây là lời nhắc nhở đăng ký cơm`,
                 description: 'Đừng quên đăng ký cơm nhé!',
                 color: Colors.Green,
             }
@@ -96,7 +95,7 @@ export const config: Config = {
             enabled: true,
             message: `Đăng ký cơm trễ cho buổi sáng! ⏰ ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌞][6h]' : '[track][emojis:🌞][10s]'}`,
             embed: {
-                title: `⏰ Đăng ký cơm trễ ngày ${formatDateTime(new Date())}`,
+                title: `⏰ Đăng ký trễ sáng hôm nay ${formatTime(new Date())}`,
                 description: 'Đăng ký cơm trễ cho buổi sáng hôm nay',
                 color: Colors.Blue,
                 fields: [
@@ -121,7 +120,7 @@ export const config: Config = {
             enabled: true,
             message: `Đăng ký cơm trễ cho buổi tối! 🌙 ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌚][6h15m]' : '[track][emojis:🌚][10s]'}`,
             embed: {
-                title: `⏰ Đăng ký trễ tối ngày ${formatDateTime(new Date())}`,
+                title: `⏰ Đăng ký trễ tối ngày ${formatTime(new Date())}`,
                 description: 'Đăng ký cơm trễ cho buổi tối hôm nay',
                 color: Colors.Blue,
                 fields: [
@@ -146,7 +145,7 @@ export const config: Config = {
             enabled: true,
             message: `Đăng ký cơm cho ngày mai! 📅 ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌞,🌚][22h]' : '[track][emojis:🌞,🌚][10s]'}`,
             embed: {
-                title: `🍽️ Đăng ký cơm ngày mai ngày ${formatDateTime(new Date(new Date().setDate(new Date().getDate() + 1)))}`,
+                title: `🍽️ Đăng ký cơm ngày mai ngày ${formatTime(new Date(new Date().setDate(new Date().getDate() + 1)))}`,
                 description: 'Đăng ký cơm cho ngày mai',
                 color: Colors.Blue,
                 fields: [
