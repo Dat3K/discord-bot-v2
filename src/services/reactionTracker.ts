@@ -1,7 +1,8 @@
-import { Client, Message, TextChannel, ReactionCollector, MessageReaction, User, EmbedBuilder, Colors } from 'discord.js';
-import { format, formatDistanceToNow, formatDuration, intervalToDuration } from 'date-fns';
+import { Client, TextChannel, ReactionCollector, MessageReaction, User, EmbedBuilder, Colors } from 'discord.js';
+import {formatDuration, intervalToDuration } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import type { ReactionTracker, ReactionTrackerData } from '../types/reactionTracker';
+import { config } from '../config/config';
 
 interface EmojiTracker {
     emoji: string;
@@ -91,6 +92,33 @@ class ReactionTrackerService {
         return embed;
     }
 
+    private async logReaction(messageId: string, emoji: string, user: User, isAdd: boolean) {
+        try {
+            const tracker = this.trackers.get(messageId);
+            if (!tracker || !tracker.isActive) return;
+
+            const channel = await this.client.channels.fetch(config.logChannelId);
+            if (!(channel instanceof TextChannel)) return;
+
+            const originalChannel = await this.client.channels.fetch(tracker.messageData.channelId);
+            if (!(originalChannel instanceof TextChannel)) return;
+
+            const originalMessage = await originalChannel.messages.fetch(messageId);
+            if (!originalMessage) return;
+
+            const embed = new EmbedBuilder()
+                .setTitle(isAdd ? '➕ Reaction Added' : '➖ Reaction Removed')
+                .setDescription(`**Message:** ${tracker.messageData.description}\n**Channel:** ${originalChannel.name}\n**User:** ${user.username}\n**Emoji:** ${emoji}`)
+                .setColor(isAdd ? Colors.Green : Colors.Red)
+                .setTimestamp()
+                .setFooter({ text: `Message ID: ${messageId}` });
+
+            await channel.send({ embeds: [embed] });
+        } catch (error) {
+            console.error('Error logging reaction:', error);
+        }
+    }
+
     async createTracker(data: ReactionTrackerData): Promise<ReactionTracker | null> {
         try {
             const channel = await this.client.channels.fetch(data.channelId);
@@ -139,7 +167,7 @@ class ReactionTrackerService {
                 dispose: true
             });
 
-            collector.on('collect', (reaction, user) => {
+            collector.on('collect', async (reaction, user) => {
                 const emoji = reaction.emoji.toString();
                 const emojiTracker = trackerData.emojiTrackers.get(emoji);
                 if (emojiTracker && !emojiTracker.participants.includes(user.id)) {
@@ -147,7 +175,7 @@ class ReactionTrackerService {
                 }
             });
 
-            collector.on('remove', (reaction, user) => {
+            collector.on('remove', async (reaction, user) => {
                 const emoji = reaction.emoji.toString();
                 const emojiTracker = trackerData.emojiTrackers.get(emoji);
                 if (emojiTracker) {
