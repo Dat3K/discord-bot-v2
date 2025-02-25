@@ -7,9 +7,31 @@ dotenv.config();
 
 const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
-const formatTime = (date: Date): string => {
+// Hàm này sẽ trả về thời gian hiện tại mỗi khi được gọi
+const formatTime = (dateOffset = 0): string => {
+    const date = new Date();
+    if (dateOffset !== 0) {
+        date.setDate(date.getDate() + dateOffset);
+    }
     return format(date, 'dd/MM', { timeZone: VN_TIMEZONE, locale: vi });
 };
+
+// Hàm tạo nội dung tin nhắn với thời gian hiện tại
+const createMessageContent = (template: string, isDevMode: boolean, trackConfig: string): string => {
+    return `${template} ${isDevMode === false ? trackConfig : trackConfig.replace(/\d+h/g, '10s')}`;
+};
+
+// Interface để tạo message embed động
+interface DynamicEmbed {
+    title: (date?: Date) => string;
+    description: string;
+    color: number;
+    fields?: {
+        name: string;
+        value: string;
+        inline?: boolean;
+    }[];
+}
 
 interface ScheduledMessage {
     id: string;
@@ -17,17 +39,8 @@ interface ScheduledMessage {
     cronExpression: string;
     timezone: string;
     enabled: boolean;
-    message?: string;
-    embed: {
-        title: string;
-        description: string;
-        color: number;
-        fields?: {
-            name: string;
-            value: string;
-            inline?: boolean;
-        }[];
-    };
+    createMessage: () => string;
+    createEmbed: () => DynamicEmbed;
 }
 
 interface Config {
@@ -86,12 +99,12 @@ export const config: Config = {
             cronExpression: '0 */6 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
-            message: `Anh em vào đăng ký cơm nào <@&${process.env.AE_ROLE_ID}>`,
-            embed: {
-                title: `🍽️ Đây là lời nhắc nhở đăng ký cơm`,
+            createMessage: () => `Anh em vào đăng ký cơm nào <@&${process.env.AE_ROLE_ID}>`,
+            createEmbed: () => ({
+                title: () => `🍽️ Đây là lời nhắc nhở đăng ký cơm`,
                 description: 'Đừng quên đăng ký cơm nhé!',
                 color: Colors.Green,
-            }
+            })
         },
         {
             id: 'morning-late-registration',
@@ -99,9 +112,13 @@ export const config: Config = {
             cronExpression: '0 5 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
-            message: `Đăng ký cơm trễ cho buổi sáng! ⏰ ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌞][6h]' : '[track][emojis:🌞][10s]'}`,
-            embed: {
-                title: `⏰ Đăng ký trễ sáng hôm nay ${formatTime(new Date())}`,
+            createMessage: () => createMessageContent(
+                'Đăng ký cơm trễ cho buổi sáng! ⏰',
+                process.env.DEV_MODE === 'false',
+                '[track][emojis:🌞][6h]'
+            ),
+            createEmbed: () => ({
+                title: () => `⏰ Đăng ký trễ sáng hôm nay ${formatTime()}`,
                 description: 'Đăng ký cơm trễ cho buổi sáng hôm nay',
                 color: Colors.Blue,
                 fields: [
@@ -116,7 +133,7 @@ export const config: Config = {
                         inline: false
                     },
                 ]
-            }
+            })
         },
         {
             id: 'night-late-registration',
@@ -124,9 +141,13 @@ export const config: Config = {
             cronExpression: '0 12 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
-            message: `Đăng ký cơm trễ cho buổi tối! 🌙 ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌚][6h15m]' : '[track][emojis:🌚][10s]'}`,
-            embed: {
-                title: `⏰ Đăng ký trễ tối ngày ${formatTime(new Date())}`,
+            createMessage: () => createMessageContent(
+                'Đăng ký cơm trễ cho buổi tối! 🌙',
+                process.env.DEV_MODE === 'false',
+                '[track][emojis:🌚][6h15m]'
+            ),
+            createEmbed: () => ({
+                title: () => `⏰ Đăng ký trễ tối ngày ${formatTime()}`,
                 description: 'Đăng ký cơm trễ cho buổi tối hôm nay',
                 color: Colors.Blue,
                 fields: [
@@ -141,7 +162,7 @@ export const config: Config = {
                         inline: false
                     },
                 ]
-            }
+            })
         },
         {
             id: 'meal-registration',
@@ -149,9 +170,13 @@ export const config: Config = {
             cronExpression: '0 5 * * *',
             timezone: VN_TIMEZONE,
             enabled: true,
-            message: `Đăng ký cơm cho ngày mai! 📅 ${process.env.DEV_MODE === 'false' ? '[track][emojis:🌞,🌚][22h]' : '[track][emojis:🌞,🌚][10s]'}`,
-            embed: {
-                title: `🍽️ Đăng ký cơm ngày mai ngày ${formatTime(new Date(new Date().setDate(new Date().getDate() + 1)))}`,
+            createMessage: () => createMessageContent(
+                'Đăng ký cơm cho ngày mai! 📅',
+                process.env.DEV_MODE === 'false',
+                '[track][emojis:🌞,🌚][22h]'
+            ),
+            createEmbed: () => ({
+                title: () => `🍽️ Đăng ký cơm ngày mai ngày ${formatTime(1)}`,
                 description: 'Đăng ký cơm cho ngày mai',
                 color: Colors.Blue,
                 fields: [
@@ -166,7 +191,7 @@ export const config: Config = {
                         inline: false
                     },
                 ]
-            }
+            })
         },
     ]
 }; 

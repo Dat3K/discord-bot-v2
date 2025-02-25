@@ -6,7 +6,7 @@ const scheduleMessages = (client: Client) => {
     const jobs: cron.ScheduledTask[] = [];
 
     try {
-        config.scheduledMessages.forEach(({ id, channelId, cronExpression, embed, timezone, enabled, message }) => {
+        config.scheduledMessages.forEach(({ id, channelId, cronExpression, timezone, enabled, createMessage, createEmbed }) => {
             if (!enabled) {
                 console.log(`Message ${id} is disabled, skipping...`);
                 return;
@@ -21,20 +21,20 @@ const scheduleMessages = (client: Client) => {
                 const channel = client.channels.cache.get(channelId);
                 if (channel instanceof TextChannel) {
                     const now = new Date();
-                    const title = eval('`' + embed.title + '`'); // Evaluate the template string
+                    const dynamicEmbed = createEmbed();
                     
                     const embedMessage = new EmbedBuilder()
-                        .setTitle(title)
-                        .setDescription(embed.description)
-                        .setColor(embed.color)
+                        .setTitle(dynamicEmbed.title(now))
+                        .setDescription(dynamicEmbed.description)
+                        .setColor(dynamicEmbed.color)
                         .setTimestamp(now);
 
-                    if (embed.fields) {
-                        embedMessage.addFields(embed.fields);
+                    if (dynamicEmbed.fields) {
+                        embedMessage.addFields(dynamicEmbed.fields);
                     }
 
                     channel.send({ 
-                        content: message || '',
+                        content: createMessage(),
                         embeds: [embedMessage] 
                     })
                         .then(() => console.log(`Successfully sent scheduled message: ${id}`))

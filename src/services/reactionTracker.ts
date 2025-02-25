@@ -89,34 +89,52 @@ class ReactionTrackerService {
                 inline: true
             });
         }
-        return embed;
-    }
 
-    private async logReaction(messageId: string, emoji: string, user: User, isAdd: boolean) {
-        try {
-            const tracker = this.trackers.get(messageId);
-            if (!tracker || !tracker.isActive) return;
-
-            const channel = await this.client.channels.fetch(config.logChannelId);
-            if (!(channel instanceof TextChannel)) return;
-
-            const originalChannel = await this.client.channels.fetch(tracker.messageData.channelId);
-            if (!(originalChannel instanceof TextChannel)) return;
-
-            const originalMessage = await originalChannel.messages.fetch(messageId);
-            if (!originalMessage) return;
-
-            const embed = new EmbedBuilder()
-                .setTitle(isAdd ? '➕ Reaction Added' : '➖ Reaction Removed')
-                .setDescription(`**Message:** ${tracker.messageData.description}\n**Channel:** ${originalChannel.name}\n**User:** ${user.username}\n**Emoji:** ${emoji}`)
-                .setColor(isAdd ? Colors.Green : Colors.Red)
-                .setTimestamp()
-                .setFooter({ text: `Message ID: ${messageId}` });
-
-            await channel.send({ embeds: [embed] });
-        } catch (error) {
-            console.error('Error logging reaction:', error);
+        // Kiểm tra nếu là tin nhắn đăng ký cơm ngày mai
+        if (tracker.messageData.description.toLowerCase().includes('đăng ký cơm') && 
+            tracker.messageData.description.toLowerCase().includes('ngày mai')) {
+            try {
+                const guild = await this.client.guilds.fetch(tracker.messageData.guildId);
+                
+                // Lấy danh sách tất cả thành viên (không bao gồm bot)
+                const members = await guild.members.fetch();
+                const allHumans = members.filter(member => !member.user.bot);
+                
+                // Lấy danh sách người đã react (tất cả emoji)
+                const allParticipantIds = new Set<string>();
+                for (const emojiTracker of tracker.emojiTrackers.values()) {
+                    emojiTracker.participants.forEach(id => allParticipantIds.add(id));
+                }
+                
+                // Tìm người chưa react
+                const nonParticipants = allHumans.filter(member => !allParticipantIds.has(member.id));
+                
+                // Tạo danh sách hiển thị
+                const nonParticipantsList = nonParticipants.size > 0
+                    ? Array.from(nonParticipants.values())
+                        .map((member, i) => `${i + 1}. ${member.nickname || member.user.username}`)
+                        .join('\n')
+                    : '*Tất cả đã đăng ký*';
+                
+                // Thêm vào embed
+                embed.addFields({
+                    name: `⚠️ Chưa đăng ký - ${nonParticipants.size} người`,
+                    value: nonParticipantsList.length > 1024 
+                        ? nonParticipantsList.substring(0, 1020) + '...' 
+                        : nonParticipantsList,
+                    inline: true
+                });
+            } catch (error) {
+                console.error('Error creating non-participants list:', error);
+                embed.addFields({
+                    name: '⚠️ Chưa đăng ký',
+                    value: '*Không thể lấy danh sách*',
+                    inline: true
+                });
+            }
         }
+
+        return embed;
     }
 
     async createTracker(data: ReactionTrackerData): Promise<ReactionTracker | null> {
