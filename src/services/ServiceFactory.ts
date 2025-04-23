@@ -7,11 +7,10 @@
 
 import { LoggingService } from './LoggingService.js';
 import { MessageService } from './MessageService.js';
-import { ReactionCollectorService } from './ReactionCollectorService.js';
 import { MealReminderService } from './MealReminderService.js';
 
 // Define service types
-export type ServiceType = 'logging' | 'message' | 'reactionCollector' | 'mealReminder';
+export type ServiceType = 'logging' | 'message' | 'mealReminder';
 
 /**
  * Service Factory class
@@ -63,10 +62,6 @@ export class ServiceFactory {
       case 'message':
         logger.info('Creating MessageService');
         this.services.set(type, new MessageService());
-        break;
-      case 'reactionCollector':
-        logger.info('Creating ReactionCollectorService');
-        this.services.set(type, new ReactionCollectorService());
         break;
       case 'mealReminder':
         logger.info('Creating MealReminderService');

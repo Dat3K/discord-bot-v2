@@ -6,13 +6,9 @@
 
 import { Message } from 'discord.js';
 import { LoggingService } from '../services/LoggingService.js';
-import { CommandHandler } from '../commands/CommandHandler.js';
 
 // Get logger instance
 const logger = LoggingService.getInstance();
-
-// Get command handler instance
-const commandHandler = CommandHandler.getInstance();
 
 /**
  * Handles the messageCreate event
@@ -28,11 +24,6 @@ export async function messageCreateHandler(message: Message): Promise<void> {
     content: message.content,
   });
 
-  // Handle commands
-  const handled = await commandHandler.handleMessage(message);
-
-  // If the message was not a command, process it as a regular message
-  if (!handled) {
-    // TODO: Implement regular message processing
-  }
+  // Using slash commands instead of traditional commands
+  // No message processing needed here
 }

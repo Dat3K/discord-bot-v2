@@ -31,5 +31,5 @@ export async function messageReactionAddHandler(reaction: MessageReaction | Part
     channelId: fetchedReaction.message.channel.id,
   });
 
-  // TODO: Implement reaction collection
+  // Reaction handling is implemented directly in MealRegistrationService
 }

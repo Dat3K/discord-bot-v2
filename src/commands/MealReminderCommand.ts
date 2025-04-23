@@ -39,7 +39,7 @@ export const MealReminderCommand: SlashCommand = {
 
     switch (subcommand) {
       case 'status':
-        await handleStatusSubcommand(interaction, mealReminderService);
+        await handleStatusSubcommand(interaction);
         break;
       case 'send':
         await handleSendSubcommand(interaction, mealReminderService);
@@ -53,11 +53,9 @@ export const MealReminderCommand: SlashCommand = {
 /**
  * Handles the status subcommand
  * @param interaction The interaction
- * @param mealReminderService The meal reminder service
  */
 async function handleStatusSubcommand(
-  interaction: ChatInputCommandInteraction,
-  _mealReminderService: MealReminderService // Unused parameter but kept for consistency
+  interaction: ChatInputCommandInteraction
 ): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor('#00FF00')

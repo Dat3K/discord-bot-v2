@@ -6,7 +6,6 @@
 
 import { Client } from 'discord.js';
 import { LoggingService } from '../services/LoggingService.js';
-import { registerCommands } from '../commands/CommandRegistry.js';
 import { registerSlashCommands } from '../commands/SlashCommandRegistry.js';
 import { MealReminderService } from '../services/MealReminderService.js';
 import { MealRegistrationService } from '../services/MealRegistrationService.js';
@@ -31,9 +30,6 @@ export async function readyHandler(client: Client): Promise<void> {
       type: 0, // Playing
     }],
   });
-
-  // Register legacy commands
-  registerCommands();
 
   // Register slash commands
   await registerSlashCommands();

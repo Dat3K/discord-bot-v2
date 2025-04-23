@@ -7,9 +7,6 @@
 
 import { createLogger, format, transports, Logger } from 'winston';
 import { config } from '../config/config';
-import { join } from 'path';
-import { mkdir } from 'fs/promises';
-
 
 // Observer pattern for error notifications
 type ErrorObserver = (error: Error, context?: Record<string, unknown>) => void;
@@ -20,13 +17,7 @@ export class LoggingService {
   private errorObservers: ErrorObserver[] = [];
 
   private constructor() {
-    // Create logs directory if it doesn't exist
-    const logsDir = join(process.cwd(), 'logs');
-    mkdir(logsDir, { recursive: true }).catch(err => {
-      console.error('Failed to create logs directory:', err);
-    });
-
-    // Create Winston logger
+    // Create Winston logger with console transport only
     this.logger = createLogger({
       level: config.logging.level,
       format: format.combine(
@@ -37,7 +28,7 @@ export class LoggingService {
       ),
       defaultMeta: { service: 'discord-bot' },
       transports: [
-        // Console transport
+        // Console transport only
         new transports.Console({
           format: format.combine(
             format.colorize(),
@@ -47,20 +38,7 @@ export class LoggingService {
               }`;
             })
           ),
-        }),
-        // File transport for all logs
-        new transports.File({
-          filename: 'logs/combined.log',
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
-        }),
-        // File transport for error logs
-        new transports.File({
-          filename: 'logs/error.log',
-          level: 'error',
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
-        }),
+        })
       ],
     });
   }
