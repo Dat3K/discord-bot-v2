@@ -1,0 +1,30 @@
+{
+  "name": "discord-bot-v2",
+  "version": "1.0.0",
+  "description": "A Discord bot built with TypeScript and Bun",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --hot run src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist",
+    "lint": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun-types": "latest",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "winston": "^3.17.0",
+    "cron": "^4.3.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
