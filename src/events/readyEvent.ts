@@ -55,6 +55,8 @@ export async function readyHandler(client: Client): Promise<void> {
     mealRegistrationService.setClient(client);
     mealRegistrationService.setRegistrationChannel(config.mealRegistration.channelId);
     mealRegistrationService.setLogChannel(config.mealRegistration.logChannelId);
+    // Set the late registration channel to use the error notification channel in development mode
+    mealRegistrationService.setLateRegistrationChannel();
     await mealRegistrationService.start();
     logger.info('Meal registration service started');
   } catch (error) {

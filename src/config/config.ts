@@ -39,7 +39,9 @@ class Configuration {
       },
       mealRegistration: {
         channelId: getEnv('MEAL_REGISTRATION_CHANNEL_ID', ''),
-        logChannelId: getEnv('MEAL_REGISTRATION_LOG_CHANNEL_ID', '1284201024458068050'),
+        logChannelId: getEnv('MEAL_REGISTRATION_LOG_CHANNEL_ID', ''),
+        lateChannelId: getEnv('LATE_MEAL_REGISTRATION_CHANNEL_ID', ''),
+        lateLogChannelId: getEnv('LATE_MEAL_REGISTRATION_LOG_CHANNEL_ID', ''),
       },
       isDevelopment: isDevelopment(),
     };

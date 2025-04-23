@@ -74,11 +74,11 @@ export const TestCommand: SlashCommand = {
           break;
         case 'late_breakfast':
           await mealRegistrationService.createLateBreakfastMessage();
-          await interaction.editReply('Test late breakfast registration message sent successfully.');
+          await interaction.editReply(`Test late breakfast registration message sent successfully to ${config.isDevelopment ? 'error notification channel' : 'late registration channel'}.`);
           break;
         case 'late_dinner':
           await mealRegistrationService.createLateDinnerMessage();
-          await interaction.editReply('Test late dinner registration message sent successfully.');
+          await interaction.editReply(`Test late dinner registration message sent successfully to ${config.isDevelopment ? 'error notification channel' : 'late registration channel'}.`);
           break;
 
         default:

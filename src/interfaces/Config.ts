@@ -74,6 +74,16 @@ export interface MealRegistrationConfig {
    * The channel ID for logging meal registration activities
    */
   logChannelId: string;
+
+  /**
+   * The channel ID for late meal registration
+   */
+  lateChannelId: string;
+
+  /**
+   * The channel ID for logging late meal registration activities
+   */
+  lateLogChannelId: string;
 }
 
 /**

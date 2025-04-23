@@ -29,8 +29,9 @@ export class MealRegistrationService {
   private client: Client | null = null;
   private registrationChannelId: string = '';
   private logChannelId: string = '';
-  private lateRegistrationChannelId: string = '1158435828117286962';
-  private lateRegistrationLogChannelId: string = '1284201138106798241';
+  private lateRegistrationChannelId: string = '';
+  private lateRegistrationLogChannelId: string = '';
+  private useErrorChannelForLateRegistration: boolean = false;
   private currentRegistrationMessage: Message | null = null;
   private currentLateBreakfastMessage: Message | null = null;
   private currentLateDinnerMessage: Message | null = null;
@@ -54,6 +55,10 @@ export class MealRegistrationService {
    * Private constructor (Singleton pattern)
    */
   private constructor() {
+    // Initialize channel IDs from config
+    this.lateRegistrationChannelId = config.mealRegistration.lateChannelId;
+    this.lateRegistrationLogChannelId = config.mealRegistration.lateLogChannelId;
+
     logger.info('MealRegistrationService initialized');
   }
 
@@ -104,6 +109,27 @@ export class MealRegistrationService {
   public setLogChannel(channelId: string): void {
     this.logChannelId = channelId;
     logger.info('Log channel set', { channelId });
+  }
+
+  /**
+   * Sets the channel ID for late registration messages
+   * @param channelId The channel ID to send late registration messages to (optional, uses config value if not provided)
+   */
+  public setLateRegistrationChannel(channelId?: string): void {
+    // If in development mode, use the error notification channel
+    if (config.isDevelopment) {
+      this.useErrorChannelForLateRegistration = true;
+      logger.info('Development mode: Will use error notification channel for late meal registration', {
+        channelId: config.logging.errorNotificationChannelId,
+        originalChannelId: channelId || this.lateRegistrationChannelId
+      });
+    } else if (channelId) {
+      this.lateRegistrationChannelId = channelId;
+      logger.info('Late registration channel set', { channelId });
+    } else {
+      // Use the channel ID from config
+      logger.info('Using late registration channel from config', { channelId: this.lateRegistrationChannelId });
+    }
   }
 
   /**
@@ -961,13 +987,19 @@ export class MealRegistrationService {
     }
 
     try {
-      // Get the channel
-      const channel = await this.client.channels.fetch(this.lateRegistrationChannelId);
+      // Get the channel - use error notification channel in development mode if flag is set
+      const channelId = (config.isDevelopment && this.useErrorChannelForLateRegistration)
+        ? config.logging.errorNotificationChannelId
+        : this.lateRegistrationChannelId;
+
+      const channel = await this.client.channels.fetch(channelId);
 
       if (!channel || !(channel instanceof TextChannel)) {
-        logger.error('Invalid late registration channel', { channelId: this.lateRegistrationChannelId });
+        logger.error('Invalid late registration channel', { channelId });
         return;
       }
+
+      logger.info('Creating late breakfast registration message', { channelId });
 
       // Get today's date for registration
       const now = new Date();
@@ -1019,13 +1051,19 @@ export class MealRegistrationService {
     }
 
     try {
-      // Get the channel
-      const channel = await this.client.channels.fetch(this.lateRegistrationChannelId);
+      // Get the channel - use error notification channel in development mode if flag is set
+      const channelId = (config.isDevelopment && this.useErrorChannelForLateRegistration)
+        ? config.logging.errorNotificationChannelId
+        : this.lateRegistrationChannelId;
+
+      const channel = await this.client.channels.fetch(channelId);
 
       if (!channel || !(channel instanceof TextChannel)) {
-        logger.error('Invalid late registration channel', { channelId: this.lateRegistrationChannelId });
+        logger.error('Invalid late registration channel', { channelId });
         return;
       }
+
+      logger.info('Creating late dinner registration message', { channelId });
 
       // Get today's date for registration
       const now = new Date();
