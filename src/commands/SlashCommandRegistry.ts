@@ -1,12 +1,13 @@
 /**
  * Slash Command Registry
- * 
+ *
  * This file registers all slash commands with the slash command handler.
  */
 
-import { LoggingService } from '../services/LoggingService';
-import { SlashCommandHandler } from './SlashCommandHandler';
-import { HelpSlashCommand } from './HelpSlashCommand';
+import { LoggingService } from '../services/LoggingService.js';
+import { SlashCommandHandler } from './SlashCommandHandler.js';
+import { HelpSlashCommand } from './HelpSlashCommand.js';
+import { MealReminderCommand } from './MealReminderCommand.js';
 
 // Get logger instance
 const logger = LoggingService.getInstance();
@@ -24,8 +25,7 @@ export async function registerSlashCommands(): Promise<void> {
 
   // Register commands
   commandHandler.registerCommand(HelpSlashCommand);
-
-  // TODO: Register more commands
+  commandHandler.registerCommand(MealReminderCommand);
 
   // Deploy commands to Discord
   await commandHandler.deployCommands();

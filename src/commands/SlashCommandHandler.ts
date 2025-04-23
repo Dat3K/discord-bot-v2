@@ -1,16 +1,17 @@
 /**
  * Slash Command Handler
- * 
+ *
  * This file implements the Command pattern for handling slash commands.
  * It provides a registry for slash commands and handles command execution.
  */
 
-import { 
-  ChatInputCommandInteraction, 
-  Client, 
-  Collection, 
-  REST, 
-  Routes 
+import {
+  ChatInputCommandInteraction,
+  Client,
+  Collection,
+  REST,
+  Routes,
+  MessageFlags
 } from 'discord.js';
 import { LoggingService } from '../services/LoggingService';
 import type { SlashCommand } from '../interfaces/SlashCommand';
@@ -154,9 +155,9 @@ export class SlashCommandHandler {
 
       // Reply with error message if interaction hasn't been replied to yet
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'There was an error executing this command.', ephemeral: true });
+        await interaction.followUp({ content: 'There was an error executing this command.', flags: MessageFlags.Ephemeral });
       } else {
-        await interaction.reply({ content: 'There was an error executing this command.', ephemeral: true });
+        await interaction.reply({ content: 'There was an error executing this command.', flags: MessageFlags.Ephemeral });
       }
     }
   }

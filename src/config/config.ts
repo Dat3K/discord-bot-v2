@@ -34,6 +34,9 @@ class Configuration {
       timezone: {
         timezone: getEnv('TZ', 'Asia/Bangkok'), // Default to GMT+7
       },
+      mealReminder: {
+        channelId: getEnv('MEAL_REMINDER_CHANNEL_ID', ''),
+      },
       isDevelopment: isDevelopment(),
     };
 

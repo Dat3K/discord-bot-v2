@@ -49,7 +49,7 @@
   - [ ] Setup log file rotation
   - [ ] Utilize Bun's built-in performance APIs
 - [ ] Implement MessageService
-  - [ ] Setup message scheduling system using bun-cron
+  - [ ] Setup message scheduling system using cron
   - [ ] Implement message sending logic
   - [ ] Create message template system
   - [ ] Utilize Bun's optimized I/O operations

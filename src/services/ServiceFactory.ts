@@ -8,9 +8,10 @@
 import { LoggingService } from './LoggingService.js';
 import { MessageService } from './MessageService.js';
 import { ReactionCollectorService } from './ReactionCollectorService.js';
+import { MealReminderService } from './MealReminderService.js';
 
 // Define service types
-export type ServiceType = 'logging' | 'message' | 'reactionCollector';
+export type ServiceType = 'logging' | 'message' | 'reactionCollector' | 'mealReminder';
 
 /**
  * Service Factory class
@@ -66,6 +67,10 @@ export class ServiceFactory {
       case 'reactionCollector':
         logger.info('Creating ReactionCollectorService');
         this.services.set(type, new ReactionCollectorService());
+        break;
+      case 'mealReminder':
+        logger.info('Creating MealReminderService');
+        this.services.set(type, MealReminderService.getInstance());
         break;
       default:
         throw new Error(`Unknown service type: ${type}`);

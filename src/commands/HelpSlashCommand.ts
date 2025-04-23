@@ -7,7 +7,8 @@
 import {
   ChatInputCommandInteraction,
   EmbedBuilder,
-  SlashCommandBuilder
+  SlashCommandBuilder,
+  MessageFlags
 } from 'discord.js';
 import type { SlashCommand } from '../interfaces/SlashCommand';
 import { SlashCommandHandler } from './SlashCommandHandler';
@@ -40,7 +41,7 @@ export const HelpSlashCommand: SlashCommand = {
 
       // If command not found
       if (!command) {
-        await interaction.reply({ content: `Command "/${commandName}" not found.`, ephemeral: true });
+        await interaction.reply({ content: `Command "/${commandName}" not found.`, flags: MessageFlags.Ephemeral });
         return;
       }
 
@@ -62,7 +63,7 @@ export const HelpSlashCommand: SlashCommand = {
         embed.addFields({ name: 'Options', value: optionsField });
       }
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -80,6 +81,6 @@ export const HelpSlashCommand: SlashCommand = {
       });
     });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },
 };

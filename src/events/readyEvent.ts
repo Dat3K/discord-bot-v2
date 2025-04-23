@@ -8,6 +8,8 @@ import { Client } from 'discord.js';
 import { LoggingService } from '../services/LoggingService.js';
 import { registerCommands } from '../commands/CommandRegistry.js';
 import { registerSlashCommands } from '../commands/SlashCommandRegistry.js';
+import { MealReminderService } from '../services/MealReminderService.js';
+import { config } from '../config/config.js';
 
 // Get logger instance
 const logger = LoggingService.getInstance();
@@ -33,6 +35,17 @@ export async function readyHandler(client: Client): Promise<void> {
 
   // Register slash commands
   await registerSlashCommands();
+
+  // Start meal reminder service
+  try {
+    const mealReminderService = MealReminderService.getInstance();
+    mealReminderService.setClient(client);
+    mealReminderService.setReminderChannel(config.mealReminder.channelId);
+    await mealReminderService.start();
+    logger.info('Meal reminder service started');
+  } catch (error) {
+    logger.error('Failed to start meal reminder service', { error });
+  }
 
   logger.info('Bot is ready');
 }

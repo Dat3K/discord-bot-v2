@@ -1,6 +1,6 @@
 /**
  * Configuration Interfaces
- * 
+ *
  * This file defines interfaces for configuration.
  */
 
@@ -52,6 +52,16 @@ export interface TimezoneConfig {
 }
 
 /**
+ * Meal reminder configuration interface
+ */
+export interface MealReminderConfig {
+  /**
+   * The channel ID for meal reminders
+   */
+  channelId: string;
+}
+
+/**
  * Main configuration interface
  */
 export interface Config {
@@ -69,6 +79,11 @@ export interface Config {
    * Timezone configuration
    */
   timezone: TimezoneConfig;
+
+  /**
+   * Meal reminder configuration
+   */
+  mealReminder: MealReminderConfig;
 
   /**
    * Whether the bot is running in development mode
