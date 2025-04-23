@@ -8,6 +8,7 @@ import { LoggingService } from '../services/LoggingService.js';
 import { SlashCommandHandler } from './SlashCommandHandler.js';
 import { HelpSlashCommand } from './HelpSlashCommand.js';
 import { MealReminderCommand } from './MealReminderCommand.js';
+import { MealRegistrationCommand } from './MealRegistrationCommand.js';
 
 // Get logger instance
 const logger = LoggingService.getInstance();
@@ -26,6 +27,7 @@ export async function registerSlashCommands(): Promise<void> {
   // Register commands
   commandHandler.registerCommand(HelpSlashCommand);
   commandHandler.registerCommand(MealReminderCommand);
+  commandHandler.registerCommand(MealRegistrationCommand);
 
   // Deploy commands to Discord
   await commandHandler.deployCommands();

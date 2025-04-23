@@ -37,6 +37,10 @@ class Configuration {
       mealReminder: {
         channelId: getEnv('MEAL_REMINDER_CHANNEL_ID', ''),
       },
+      mealRegistration: {
+        channelId: getEnv('MEAL_REGISTRATION_CHANNEL_ID', ''),
+        logChannelId: getEnv('MEAL_REGISTRATION_LOG_CHANNEL_ID', '1284201024458068050'),
+      },
       isDevelopment: isDevelopment(),
     };
 

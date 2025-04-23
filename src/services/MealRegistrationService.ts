@@ -1,0 +1,724 @@
+/**
+ * Meal Registration Service
+ *
+ * This service manages the daily meal registration embed message.
+ * It creates a new embed message every day at 5 AM and ends at 3 AM the next day.
+ * Users can register for meals by reacting to the message.
+ */
+
+import { Client, EmbedBuilder, GuildMember, Message, MessageReaction, TextChannel, User } from 'discord.js';
+import type { PartialMessageReaction, PartialUser } from 'discord.js';
+import { CronJob } from 'cron';
+import { formatInTimeZone } from 'date-fns-tz';
+import { addDays } from 'date-fns';
+import { LoggingService } from './LoggingService.js';
+import { DatabaseService } from './DatabaseService.js';
+import { config } from '../config/config.js';
+
+// Get logger instance
+const logger = LoggingService.getInstance();
+
+/**
+ * Meal Registration Service
+ * Manages the daily meal registration embed message
+ */
+export class MealRegistrationService {
+  private static instance: MealRegistrationService;
+  private client: Client | null = null;
+  private registrationChannelId: string = '';
+  private logChannelId: string = '';
+  private currentRegistrationMessage: Message | null = null;
+  private createMessageJob: CronJob | null = null;
+  private endRegistrationJob: CronJob | null = null;
+
+  // Emoji reactions for breakfast and dinner
+  private readonly BREAKFAST_EMOJI = '🌞'; // Breakfast emoji (morning sun)
+  private readonly DINNER_EMOJI = '🌙'; // Dinner emoji (moon)
+
+  // Role ID for members who should be tracked
+  private readonly TRACKED_ROLE_ID = '1162022091630059531';
+
+  /**
+   * Private constructor (Singleton pattern)
+   */
+  private constructor() {
+    logger.info('MealRegistrationService initialized');
+  }
+
+  /**
+   * Gets the singleton instance
+   * @returns The singleton instance
+   */
+  public static getInstance(): MealRegistrationService {
+    if (!MealRegistrationService.instance) {
+      MealRegistrationService.instance = new MealRegistrationService();
+    }
+    return MealRegistrationService.instance;
+  }
+
+  /**
+   * Sets the Discord client
+   * @param client The Discord client
+   */
+  public setClient(client: Client): void {
+    this.client = client;
+
+    // Set up reaction collector when client is set
+    this.setupReactionCollector();
+  }
+
+  /**
+   * Sets the channel ID for registration messages
+   * @param channelId The channel ID to send registration messages to
+   */
+  public setRegistrationChannel(channelId: string): void {
+    // If in development mode, use the error notification channel
+    if (config.isDevelopment) {
+      this.registrationChannelId = config.logging.errorNotificationChannelId;
+      logger.info('Development mode: Using error notification channel for meal registration', {
+        channelId: this.registrationChannelId,
+        originalChannelId: channelId
+      });
+    } else {
+      this.registrationChannelId = channelId;
+      logger.info('Registration channel set', { channelId });
+    }
+  }
+
+  /**
+   * Sets the channel ID for logging meal registration activities
+   * @param channelId The channel ID to send logs to
+   */
+  public setLogChannel(channelId: string): void {
+    this.logChannelId = channelId;
+    logger.info('Log channel set', { channelId });
+  }
+
+  /**
+   * Sends a log message to the log channel using an embed
+   * @param user The user who performed the action
+   * @param action The action performed (add or remove reaction)
+   * @param mealType The type of meal (breakfast or dinner)
+   * @param message The message that was reacted to
+   */
+  private async sendLogEmbed(
+    user: User | PartialUser,
+    action: 'add' | 'remove',
+    mealType: 'breakfast' | 'dinner',
+    message: Message
+  ): Promise<void> {
+    if (!this.client) {
+      logger.error('Client not set, cannot send log message');
+      return;
+    }
+
+    if (!this.logChannelId) {
+      logger.error('Log channel not set, cannot send log message');
+      return;
+    }
+
+    try {
+      // Get the channel
+      const channel = await this.client.channels.fetch(this.logChannelId);
+
+      if (!channel || !(channel instanceof TextChannel)) {
+        logger.error('Invalid log channel', { channelId: this.logChannelId });
+        return;
+      }
+
+      // Get the current time in the configured timezone
+      const now = new Date();
+      const timeStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy HH:mm:ss');
+
+      // Create the embed
+      const embed = new EmbedBuilder()
+        .setColor(action === 'add' ? '#00FF00' : '#FF0000')
+        .setTitle(action === 'add' ? '✅ Đăng ký bữa ăn' : '❌ Hủy đăng ký bữa ăn')
+        .setDescription(`**${user.tag}** đã ${action === 'add' ? 'đăng ký' : 'hủy đăng ký'} **${mealType === 'breakfast' ? 'bữa sáng' : 'bữa tối'}** cho ngày mai`)
+        .addFields(
+          { name: 'Người dùng', value: `<@${user.id}> (${user.id})`, inline: true },
+          { name: 'Thời gian', value: timeStr, inline: true },
+          { name: 'Tin nhắn', value: `[Xem tin nhắn đăng ký](${message.url})`, inline: true }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn' })
+        .setTimestamp();
+
+      // Send the embed
+      await channel.send({ embeds: [embed] });
+    } catch (error) {
+      logger.error('Error sending log embed', { error, userId: user.id, action, mealType });
+    }
+  }
+
+  /**
+   * Starts the meal registration service
+   */
+  public async start(): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not set');
+    }
+
+    if (!this.registrationChannelId) {
+      throw new Error('Registration channel not set');
+    }
+
+    // Verify that the channel exists
+    try {
+      const channel = await this.client.channels.fetch(this.registrationChannelId);
+      if (!channel) {
+        throw new Error(`Channel with ID ${this.registrationChannelId} not found`);
+      }
+      if (!(channel instanceof TextChannel)) {
+        throw new Error(`Channel with ID ${this.registrationChannelId} is not a text channel`);
+      }
+    } catch (error: any) {
+      logger.error('Failed to fetch registration channel', { error, channelId: this.registrationChannelId });
+      throw new Error(`Failed to fetch registration channel: ${error.message || 'Unknown error'}`);
+    }
+
+    logger.info('Starting meal registration service');
+
+    // Schedule the creation of a new registration message every day at 5 AM
+    this.createMessageJob = new CronJob(
+      '0 5 * * *', // Run at 5:00 AM every day
+      () => {
+        this.createRegistrationMessage();
+      },
+      null,
+      true,
+      config.timezone.timezone
+    );
+
+    // Schedule the end of registration at 3 AM the next day
+    this.endRegistrationJob = new CronJob(
+      '0 3 * * *', // Run at 3:00 AM every day
+      () => {
+        this.endRegistration();
+      },
+      null,
+      true,
+      config.timezone.timezone
+    );
+
+    // Create a registration message immediately if it's between 5 AM and 3 AM next day
+    const now = new Date();
+    const hour = now.getHours();
+    if (hour >= 5 || hour < 3) {
+      await this.createRegistrationMessage();
+    }
+
+    logger.info('Meal registration service started');
+  }
+
+  /**
+   * Sets up the reaction collector to listen for reactions on the registration message
+   */
+  private setupReactionCollector(): void {
+    if (!this.client) {
+      logger.error('Client not set, cannot setup reaction collector');
+      return;
+    }
+
+    // Listen for messageReactionAdd events
+    this.client.on('messageReactionAdd', async (reaction, user) => {
+      // Ignore bot's own reactions
+      if (user.bot) return;
+
+      // Check if this is our registration message
+      if (this.currentRegistrationMessage && reaction.message.id === this.currentRegistrationMessage.id) {
+        await this.handleReactionAdd(reaction, user);
+      }
+    });
+
+    // Listen for messageReactionRemove events
+    this.client.on('messageReactionRemove', async (reaction, user) => {
+      // Ignore bot's own reactions
+      if (user.bot) return;
+
+      // Check if this is our registration message
+      if (this.currentRegistrationMessage && reaction.message.id === this.currentRegistrationMessage.id) {
+        await this.handleReactionRemove(reaction, user);
+      }
+    });
+
+    logger.info('Reaction collector set up');
+  }
+
+  /**
+   * Handles a reaction being added to the registration message
+   * @param reaction The reaction that was added
+   * @param user The user who added the reaction
+   */
+  private async handleReactionAdd(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser): Promise<void> {
+    const emoji = reaction.emoji.name;
+    const message = reaction.message;
+
+    if (emoji === this.BREAKFAST_EMOJI) {
+      logger.info('User registered for breakfast', { userId: user.id, username: user.tag });
+      // Add the user to the breakfast registration list
+      const db = DatabaseService.getInstance();
+      db.registerMeal(user.id, user.tag, 'breakfast', message.id.toString());
+      await this.sendLogEmbed(user, 'add', 'breakfast', message as Message);
+    } else if (emoji === this.DINNER_EMOJI) {
+      logger.info('User registered for dinner', { userId: user.id, username: user.tag });
+      // Add the user to the dinner registration list
+      const db = DatabaseService.getInstance();
+      db.registerMeal(user.id, user.tag, 'dinner', message.id.toString());
+      await this.sendLogEmbed(user, 'add', 'dinner', message as Message);
+    }
+  }
+
+  /**
+   * Handles a reaction being removed from the registration message
+   * @param reaction The reaction that was removed
+   * @param user The user who removed the reaction
+   */
+  private async handleReactionRemove(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser): Promise<void> {
+    const emoji = reaction.emoji.name;
+    const message = reaction.message;
+
+    if (emoji === this.BREAKFAST_EMOJI) {
+      logger.info('User unregistered from breakfast', { userId: user.id, username: user.tag });
+      // Remove the user from the breakfast registration list
+      const db = DatabaseService.getInstance();
+      db.unregisterMeal(user.id, 'breakfast', message.id.toString());
+      await this.sendLogEmbed(user, 'remove', 'breakfast', message as Message);
+    } else if (emoji === this.DINNER_EMOJI) {
+      logger.info('User unregistered from dinner', { userId: user.id, username: user.tag });
+      // Remove the user from the dinner registration list
+      const db = DatabaseService.getInstance();
+      db.unregisterMeal(user.id, 'dinner', message.id.toString());
+      await this.sendLogEmbed(user, 'remove', 'dinner', message as Message);
+    }
+  }
+
+  /**
+   * Creates a new registration message
+   */
+  public async createRegistrationMessage(): Promise<void> {
+    if (!this.client) {
+      logger.error('Client not set');
+      return;
+    }
+
+    try {
+      // Get the channel
+      const channel = await this.client.channels.fetch(this.registrationChannelId);
+
+      if (!channel || !(channel instanceof TextChannel)) {
+        logger.error('Invalid registration channel', { channelId: this.registrationChannelId });
+        return;
+      }
+
+      // Get tomorrow's date for registration
+      const now = new Date();
+      const tomorrow = addDays(now, 1);
+      const tomorrowStr = formatInTimeZone(tomorrow, config.timezone.timezone, 'dd/MM/yyyy');
+
+      // Create the embed
+      const embed = new EmbedBuilder()
+        .setColor('#0099FF')
+        .setTitle('🍽️ Đăng ký bữa ăn')
+        .setDescription(`Xin hãy đăng ký bữa ăn cho ngày mai (${tomorrowStr}) bằng cách react vào tin nhắn này.`)
+        .addFields(
+          { name: 'Bữa sáng', value: `React ${this.BREAKFAST_EMOJI} để đăng ký bữa sáng`, inline: false },
+          { name: 'Bữa tối', value: `React ${this.DINNER_EMOJI} để đăng ký bữa tối`, inline: false },
+          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 10 giây (chế độ development)' : 'Từ 5:00 sáng hôm nay đến 3:00 sáng ngày mai', inline: false }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn tự động' })
+        .setTimestamp();
+
+      // Send the message
+      const message = await channel.send({ embeds: [embed] });
+
+      // Add the reactions for users to click
+      await message.react(this.BREAKFAST_EMOJI);
+      await message.react(this.DINNER_EMOJI);
+
+      // Store the current registration message
+      this.currentRegistrationMessage = message;
+
+      logger.info('Registration message created', { messageId: message.id, channelId: channel.id });
+
+      // In development mode, end registration after 10 seconds
+      if (config.isDevelopment) {
+        logger.info('Development mode: Registration will end in 10 seconds');
+        setTimeout(async () => {
+          logger.info('Development mode: Ending registration now');
+          await this.endRegistration();
+        }, 10000); // 10 seconds
+      }
+    } catch (error) {
+      logger.error('Error creating registration message', { error });
+    }
+  }
+
+  /**
+   * Gets all members with the tracked role
+   * @returns A list of members with the tracked role
+   */
+  private async getTrackedMembers(): Promise<GuildMember[]> {
+    if (!this.client) {
+      logger.error('Client not set, cannot get tracked members');
+      return [];
+    }
+
+    if (!this.currentRegistrationMessage) {
+      logger.error('No active registration message, cannot get tracked members');
+      return [];
+    }
+
+    try {
+      // Get the guild from the message
+      const guild = this.currentRegistrationMessage.guild;
+      if (!guild) {
+        logger.error('Message not in a guild');
+        return [];
+      }
+
+      // Fetch all members (this might be slow for large guilds)
+      try {
+        await guild.members.fetch({ time: 5000 });
+      } catch (fetchError) {
+        logger.warn('Could not fetch all members, using cached members instead', { error: fetchError });
+      }
+
+      // Get the role
+      const role = guild.roles.cache.get(this.TRACKED_ROLE_ID);
+      if (!role) {
+        logger.error('Tracked role not found', { roleId: this.TRACKED_ROLE_ID });
+        return [];
+      }
+
+      // Get all members with the role
+      return Array.from(role.members.values());
+    } catch (error) {
+      logger.error('Error getting tracked members', { error });
+      return [];
+    }
+  }
+
+  /**
+   * Gets the list of registered and unregistered members for a meal
+   * @param mealType The meal type (breakfast or dinner)
+   * @returns The lists of registered and unregistered members
+   */
+  private async getMealRegistrationLists(mealType: 'breakfast' | 'dinner'): Promise<{
+    registered: { userId: string, username: string, displayName: string }[];
+    unregistered: { userId: string, username: string, displayName: string }[];
+  }> {
+    if (!this.currentRegistrationMessage) {
+      logger.error('No active registration message, cannot get registration lists');
+      return { registered: [], unregistered: [] };
+    }
+
+    try {
+      // Get all tracked members
+      const trackedMembers = await this.getTrackedMembers();
+
+      // Get all registered users from the database
+      const db = DatabaseService.getInstance();
+      const registeredUsersFromDb = db.getRegisteredUsers(mealType, this.currentRegistrationMessage.id.toString());
+
+      // Create a set of registered user IDs for quick lookup
+      const registeredUserIds = new Set(registeredUsersFromDb.map(user => user.userId));
+
+      // Get guild for member lookup
+      const guild = this.currentRegistrationMessage.guild;
+      if (!guild) {
+        logger.error('Message not in a guild');
+        return {
+          registered: registeredUsersFromDb.map(user => ({ ...user, displayName: user.username })),
+          unregistered: []
+        };
+      }
+
+      // Enhance registered users with display names
+      const registeredUsers = await Promise.all(registeredUsersFromDb.map(async user => {
+        try {
+          const member = await guild.members.fetch(user.userId).catch(() => null);
+          return {
+            userId: user.userId,
+            username: user.username,
+            displayName: member ? member.nickname || member.user.tag : user.username
+          };
+        } catch {
+          return {
+            userId: user.userId,
+            username: user.username,
+            displayName: user.username
+          };
+        }
+      }));
+
+      // Find unregistered members (tracked members who are not in the registered list)
+      const unregisteredMembers = trackedMembers
+        .filter(member => !registeredUserIds.has(member.id))
+        .map(member => ({
+          userId: member.id,
+          username: member.user.tag,
+          displayName: member.nickname || member.user.tag
+        }));
+
+      return {
+        registered: registeredUsers,
+        unregistered: unregisteredMembers
+      };
+    } catch (error) {
+      logger.error('Error getting meal registration lists', { error, mealType });
+      return { registered: [], unregistered: [] };
+    }
+  }
+
+  /**
+   * Creates an embed showing the registration status
+   * @param mealType The meal type (breakfast or dinner)
+   * @returns The embed
+   */
+  public async createRegistrationStatusEmbed(mealType: 'breakfast' | 'dinner'): Promise<EmbedBuilder> {
+    if (!this.currentRegistrationMessage) {
+      throw new Error('No active registration message');
+    }
+
+    // Get the registration lists
+    const { registered, unregistered } = await this.getMealRegistrationLists(mealType);
+
+    // Format the lists
+    const registeredList = registered.length > 0
+      ? registered.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+      : 'Không có ai';
+
+    const unregisteredList = unregistered.length > 0
+      ? unregistered.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+      : 'Không có ai';
+
+    // Create the embed
+    const embed = new EmbedBuilder()
+      .setColor('#0099FF')
+      .setTitle(`🍽️ Trạng thái đăng ký ${mealType === 'breakfast' ? 'bữa sáng' : 'bữa tối'}`)
+      .setDescription(`Trạng thái đăng ký ${mealType === 'breakfast' ? 'bữa sáng' : 'bữa tối'} cho ngày mai`)
+      .addFields(
+        { name: `Đã đăng ký (${registered.length})`, value: registeredList.length > 1024 ? registeredList.substring(0, 1021) + '...' : registeredList, inline: false },
+        { name: `Chưa đăng ký (${unregistered.length})`, value: unregisteredList.length > 1024 ? unregisteredList.substring(0, 1021) + '...' : unregisteredList, inline: false }
+      )
+      .setFooter({ text: 'Hệ thống đăng ký bữa ăn' })
+      .setTimestamp();
+
+    return embed;
+  }
+
+  /**
+   * Removes all reactions from the registration message
+   */
+  private async removeAllReactions(): Promise<void> {
+    if (!this.currentRegistrationMessage) {
+      logger.info('No active registration message, cannot remove reactions');
+      return;
+    }
+
+    try {
+      // Remove all reactions
+      await this.currentRegistrationMessage.reactions.removeAll();
+      logger.info('All reactions removed from registration message', { messageId: this.currentRegistrationMessage.id });
+    } catch (error) {
+      logger.error('Error removing reactions', { error, messageId: this.currentRegistrationMessage?.id });
+    }
+  }
+
+  /**
+   * Ends the current registration period
+   */
+  private async endRegistration(): Promise<void> {
+    logger.info('Attempting to end registration');
+
+    if (!this.currentRegistrationMessage) {
+      logger.info('No active registration message to end');
+      return;
+    }
+
+    try {
+      // Get the message
+      const message = this.currentRegistrationMessage;
+      logger.info('Found active registration message', { messageId: message.id });
+
+      // For development mode, simplify the process to avoid potential errors
+      if (config.isDevelopment) {
+        logger.info('Development mode: Using simplified registration ending');
+
+        try {
+          // Get the registration lists for both meal types
+          const breakfastLists = await this.getMealRegistrationLists('breakfast');
+          const dinnerLists = await this.getMealRegistrationLists('dinner');
+
+          // Count the registrations
+          const breakfastCount = breakfastLists.registered.length;
+          const dinnerCount = dinnerLists.registered.length;
+
+          // Create a list of all tracked members
+          const trackedMembers = await this.getTrackedMembers();
+          const trackedMemberIds = new Set(trackedMembers.map(member => member.id));
+
+          // Find members who haven't registered for either meal
+          const breakfastRegisteredIds = new Set(breakfastLists.registered.map(user => user.userId));
+          const dinnerRegisteredIds = new Set(dinnerLists.registered.map(user => user.userId));
+
+          const notRegisteredMembers = trackedMembers
+            .filter(member => !breakfastRegisteredIds.has(member.id) && !dinnerRegisteredIds.has(member.id))
+            .map(member => ({
+              userId: member.id,
+              username: member.user.tag,
+              displayName: member.nickname || member.user.tag
+            }));
+
+          // Format the lists
+          const breakfastRegisteredList = breakfastLists.registered.length > 0
+            ? breakfastLists.registered.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+            : 'Không có ai';
+
+          const dinnerRegisteredList = dinnerLists.registered.length > 0
+            ? dinnerLists.registered.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+            : 'Không có ai';
+
+          const notRegisteredList = notRegisteredMembers.length > 0
+            ? notRegisteredMembers.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+            : 'Không có ai';
+
+          // Create the summary embed
+          const summaryEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('🍽️ Kết quả đăng ký bữa ăn')
+            .setDescription('Đăng ký đã kết thúc (chế độ development)')
+            .addFields(
+              { name: `Đã đăng ký bữa sáng (${breakfastCount})`, value: breakfastRegisteredList.length > 1024 ? breakfastRegisteredList.substring(0, 1021) + '...' : breakfastRegisteredList, inline: false },
+              { name: `Đã đăng ký bữa tối (${dinnerCount})`, value: dinnerRegisteredList.length > 1024 ? dinnerRegisteredList.substring(0, 1021) + '...' : dinnerRegisteredList, inline: false },
+              { name: `Chưa đăng ký bữa nào (${notRegisteredMembers.length})`, value: notRegisteredList.length > 1024 ? notRegisteredList.substring(0, 1021) + '...' : notRegisteredList, inline: false }
+            )
+            .setFooter({ text: 'Hệ thống đăng ký bữa ăn' })
+            .setTimestamp();
+
+          // Update the message
+          await message.edit({ embeds: [summaryEmbed] });
+          logger.info('Updated message with registration summary');
+        } catch (error) {
+          logger.error('Error creating registration summary', { error });
+
+          // Fallback to simple embed if there's an error
+          const simpleEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('🍽️ Đăng ký bữa ăn (Đã kết thúc)')
+            .setDescription('Đăng ký đã kết thúc (chế độ development)')
+            .addFields(
+              { name: 'Thông báo', value: 'Đăng ký đã kết thúc sau 10 giây theo cấu hình development', inline: false }
+            )
+            .setFooter({ text: 'Hệ thống đăng ký bữa ăn' })
+            .setTimestamp();
+
+          await message.edit({ embeds: [simpleEmbed] });
+          logger.info('Updated message with simplified embed (fallback)');
+        }
+
+        // Remove all reactions
+        await this.removeAllReactions();
+
+        // Clear the database for this message
+        const db = DatabaseService.getInstance();
+        db.clearRegistrations(message.id.toString());
+
+        // Clear the current registration message
+        this.currentRegistrationMessage = null;
+
+        logger.info('Registration ended (development mode)');
+        return;
+      }
+
+      // For production mode, use the full process
+      // Get the registration lists
+      const breakfastLists = await this.getMealRegistrationLists('breakfast');
+      const dinnerLists = await this.getMealRegistrationLists('dinner');
+
+      // Count the registrations
+      const breakfastCount = breakfastLists.registered.length;
+      const dinnerCount = dinnerLists.registered.length;
+
+      // Create a list of all tracked members
+      const trackedMembers = await this.getTrackedMembers();
+
+      // Find members who haven't registered for either meal
+      const breakfastRegisteredIds = new Set(breakfastLists.registered.map(user => user.userId));
+      const dinnerRegisteredIds = new Set(dinnerLists.registered.map(user => user.userId));
+
+      const notRegisteredMembers = trackedMembers
+        .filter(member => !breakfastRegisteredIds.has(member.id) && !dinnerRegisteredIds.has(member.id))
+        .map(member => ({
+          userId: member.id,
+          username: member.user.tag,
+          displayName: member.nickname || member.user.tag
+        }));
+
+      // Format the lists
+      const breakfastRegisteredList = breakfastLists.registered.length > 0
+        ? breakfastLists.registered.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+        : 'Không có ai';
+
+      const dinnerRegisteredList = dinnerLists.registered.length > 0
+        ? dinnerLists.registered.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+        : 'Không có ai';
+
+      const notRegisteredList = notRegisteredMembers.length > 0
+        ? notRegisteredMembers.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
+        : 'Không có ai';
+
+      // Create the summary embed
+      const summaryEmbed = new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('🍽️ Kết quả đăng ký bữa ăn')
+        .setDescription('Đăng ký đã kết thúc')
+        .addFields(
+          { name: `Đã đăng ký bữa sáng (${breakfastCount})`, value: breakfastRegisteredList.length > 1024 ? breakfastRegisteredList.substring(0, 1021) + '...' : breakfastRegisteredList, inline: false },
+          { name: `Đã đăng ký bữa tối (${dinnerCount})`, value: dinnerRegisteredList.length > 1024 ? dinnerRegisteredList.substring(0, 1021) + '...' : dinnerRegisteredList, inline: false },
+          { name: `Chưa đăng ký bữa nào (${notRegisteredMembers.length})`, value: notRegisteredList.length > 1024 ? notRegisteredList.substring(0, 1021) + '...' : notRegisteredList, inline: false }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn' })
+        .setTimestamp();
+
+      // Update the message
+      await message.edit({ embeds: [summaryEmbed] });
+
+      // Remove all reactions
+      await this.removeAllReactions();
+
+      // Clear the database for this message
+      const db = DatabaseService.getInstance();
+      db.clearRegistrations(message.id.toString());
+
+      // Clear the current registration message
+      this.currentRegistrationMessage = null;
+
+      logger.info('Registration ended', {
+        messageId: message.id,
+        breakfastCount,
+        dinnerCount
+      });
+    } catch (error) {
+      logger.error('Error ending registration', { error });
+    }
+  }
+
+  /**
+   * Stops the meal registration service
+   */
+  public stop(): void {
+    // Stop all cron jobs
+    if (this.createMessageJob) {
+      this.createMessageJob.stop();
+      logger.info('Create message job stopped');
+    }
+
+    if (this.endRegistrationJob) {
+      this.endRegistrationJob.stop();
+      logger.info('End registration job stopped');
+    }
+
+    logger.info('Meal registration service stopped');
+  }
+}

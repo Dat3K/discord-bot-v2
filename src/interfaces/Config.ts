@@ -62,6 +62,21 @@ export interface MealReminderConfig {
 }
 
 /**
+ * Meal registration configuration interface
+ */
+export interface MealRegistrationConfig {
+  /**
+   * The channel ID for meal registration
+   */
+  channelId: string;
+
+  /**
+   * The channel ID for logging meal registration activities
+   */
+  logChannelId: string;
+}
+
+/**
  * Main configuration interface
  */
 export interface Config {
@@ -84,6 +99,11 @@ export interface Config {
    * Meal reminder configuration
    */
   mealReminder: MealReminderConfig;
+
+  /**
+   * Meal registration configuration
+   */
+  mealRegistration: MealRegistrationConfig;
 
   /**
    * Whether the bot is running in development mode
