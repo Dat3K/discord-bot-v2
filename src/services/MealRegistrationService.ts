@@ -750,11 +750,15 @@ export class MealRegistrationService {
             ? notRegisteredMembers.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
             : 'Không có ai';
 
+          // Get the current date for the summary
+          const now = new Date();
+          const dateStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
           // Create the summary embed
           const summaryEmbed = new EmbedBuilder()
             .setColor('#FF0000')
-            .setTitle('🍽️ Kết quả đăng ký bữa ăn')
-            .setDescription('Đăng ký đã kết thúc (chế độ development)')
+            .setTitle(`🍽️ Kết quả đăng ký bữa ăn - ${dateStr}`)
+            .setDescription(`Đăng ký đã kết thúc vào ngày ${dateStr} (chế độ development)`)
             .addFields(
               { name: `Đã đăng ký bữa sáng (${breakfastCount})`, value: breakfastRegisteredList.length > 1024 ? breakfastRegisteredList.substring(0, 1021) + '...' : breakfastRegisteredList, inline: false },
               { name: `Đã đăng ký bữa tối (${dinnerCount})`, value: dinnerRegisteredList.length > 1024 ? dinnerRegisteredList.substring(0, 1021) + '...' : dinnerRegisteredList, inline: false },
@@ -769,11 +773,15 @@ export class MealRegistrationService {
         } catch (error) {
           logger.error('Error creating registration summary', { error });
 
+          // Get the current date for the fallback summary
+          const now = new Date();
+          const dateStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
           // Fallback to simple embed if there's an error
           const simpleEmbed = new EmbedBuilder()
             .setColor('#FF0000')
-            .setTitle('🍽️ Đăng ký bữa ăn (Đã kết thúc)')
-            .setDescription('Đăng ký đã kết thúc (chế độ development)')
+            .setTitle(`🍽️ Đăng ký bữa ăn (Đã kết thúc) - ${dateStr}`)
+            .setDescription(`Đăng ký đã kết thúc vào ngày ${dateStr} (chế độ development)`)
             .addFields(
               { name: 'Thông báo', value: 'Đăng ký đã kết thúc sau 10 giây theo cấu hình development', inline: false }
             )
@@ -835,11 +843,15 @@ export class MealRegistrationService {
         ? notRegisteredMembers.map(user => `<@${user.userId}> (${user.displayName})`).join('\n')
         : 'Không có ai';
 
+      // Get the current date for the summary
+      const now = new Date();
+      const dateStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
       // Create the summary embed
       const summaryEmbed = new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('🍽️ Kết quả đăng ký bữa ăn')
-        .setDescription('Đăng ký đã kết thúc')
+        .setTitle(`🍽️ Kết quả đăng ký bữa ăn - ${dateStr}`)
+        .setDescription(`Đăng ký đã kết thúc vào ngày ${dateStr}`)
         .addFields(
           { name: `Đã đăng ký bữa sáng (${breakfastCount})`, value: breakfastRegisteredList.length > 1024 ? breakfastRegisteredList.substring(0, 1021) + '...' : breakfastRegisteredList, inline: false },
           { name: `Đã đăng ký bữa tối (${dinnerCount})`, value: dinnerRegisteredList.length > 1024 ? dinnerRegisteredList.substring(0, 1021) + '...' : dinnerRegisteredList, inline: false },
@@ -1130,11 +1142,15 @@ export class MealRegistrationService {
         ? registeredUsers.map(user => `<@${user.userId}> (${user.username})`).join('\n')
         : 'Không có ai';
 
+      // Get the current date for the summary
+      const now = new Date();
+      const dateStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
       // Create the summary embed
       const summaryEmbed = new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('🍳 Kết quả đăng ký bữa sáng trễ')
-        .setDescription('Đăng ký bữa sáng trễ đã kết thúc')
+        .setTitle(`🍳 Kết quả đăng ký bữa sáng trễ - ${dateStr}`)
+        .setDescription(`Đăng ký bữa sáng trễ đã kết thúc vào ngày ${dateStr}`)
         .addFields(
           { name: `Đã đăng ký (${registeredUsers.length})`, value: registeredList.length > 1024 ? registeredList.substring(0, 1021) + '...' : registeredList, inline: false }
         )
@@ -1187,11 +1203,15 @@ export class MealRegistrationService {
         ? registeredUsers.map(user => `<@${user.userId}> (${user.username})`).join('\n')
         : 'Không có ai';
 
+      // Get the current date for the summary
+      const now = new Date();
+      const dateStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
       // Create the summary embed
       const summaryEmbed = new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('🍲 Kết quả đăng ký bữa tối trễ')
-        .setDescription('Đăng ký bữa tối trễ đã kết thúc')
+        .setTitle(`🍲 Kết quả đăng ký bữa tối trễ - ${dateStr}`)
+        .setDescription(`Đăng ký bữa tối trễ đã kết thúc vào ngày ${dateStr}`)
         .addFields(
           { name: `Đã đăng ký (${registeredUsers.length})`, value: registeredList.length > 1024 ? registeredList.substring(0, 1021) + '...' : registeredList, inline: false }
         )
