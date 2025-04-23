@@ -3,7 +3,8 @@
  *
  * This service manages the daily meal registration embed message.
  * It creates a new embed message every day at 5 AM and ends at 3 AM the next day.
- * Users can register for meals by reacting to the message.
+ * It also manages late meal registration messages at specific times.
+ * Users can register for meals by reacting to the messages.
  */
 
 import { Client, EmbedBuilder, GuildMember, Message, MessageReaction, TextChannel, User } from 'discord.js';
@@ -28,13 +29,23 @@ export class MealRegistrationService {
   private client: Client | null = null;
   private registrationChannelId: string = '';
   private logChannelId: string = '';
+  private lateRegistrationChannelId: string = '1158435828117286962';
+  private lateRegistrationLogChannelId: string = '1284201138106798241';
   private currentRegistrationMessage: Message | null = null;
+  private currentLateBreakfastMessage: Message | null = null;
+  private currentLateDinnerMessage: Message | null = null;
   private createMessageJob: CronJob | null = null;
   private endRegistrationJob: CronJob | null = null;
+  private createLateBreakfastJob: CronJob | null = null;
+  private endLateBreakfastJob: CronJob | null = null;
+  private createLateDinnerJob: CronJob | null = null;
+  private endLateDinnerJob: CronJob | null = null;
 
   // Emoji reactions for breakfast and dinner
   private readonly BREAKFAST_EMOJI = '🌞'; // Breakfast emoji (morning sun)
   private readonly DINNER_EMOJI = '🌙'; // Dinner emoji (moon)
+  private readonly LATE_BREAKFAST_EMOJI = '🍳'; // Late breakfast emoji (frying pan)
+  private readonly LATE_DINNER_EMOJI = '🍲'; // Late dinner emoji (pot of food)
 
   // Role ID for members who should be tracked
   private readonly TRACKED_ROLE_ID = '1162022091630059531';
@@ -163,7 +174,7 @@ export class MealRegistrationService {
       throw new Error('Registration channel not set');
     }
 
-    // Verify that the channel exists
+    // Verify that the channels exist
     try {
       const channel = await this.client.channels.fetch(this.registrationChannelId);
       if (!channel) {
@@ -172,9 +183,27 @@ export class MealRegistrationService {
       if (!(channel instanceof TextChannel)) {
         throw new Error(`Channel with ID ${this.registrationChannelId} is not a text channel`);
       }
+
+      // Verify late registration channel
+      const lateChannel = await this.client.channels.fetch(this.lateRegistrationChannelId);
+      if (!lateChannel) {
+        throw new Error(`Late registration channel with ID ${this.lateRegistrationChannelId} not found`);
+      }
+      if (!(lateChannel instanceof TextChannel)) {
+        throw new Error(`Late registration channel with ID ${this.lateRegistrationChannelId} is not a text channel`);
+      }
+
+      // Verify late registration log channel
+      const lateLogChannel = await this.client.channels.fetch(this.lateRegistrationLogChannelId);
+      if (!lateLogChannel) {
+        throw new Error(`Late registration log channel with ID ${this.lateRegistrationLogChannelId} not found`);
+      }
+      if (!(lateLogChannel instanceof TextChannel)) {
+        throw new Error(`Late registration log channel with ID ${this.lateRegistrationLogChannelId} is not a text channel`);
+      }
     } catch (error: any) {
-      logger.error('Failed to fetch registration channel', { error, channelId: this.registrationChannelId });
-      throw new Error(`Failed to fetch registration channel: ${error.message || 'Unknown error'}`);
+      logger.error('Failed to fetch channels', { error });
+      throw new Error(`Failed to fetch channels: ${error.message || 'Unknown error'}`);
     }
 
     logger.info('Starting meal registration service');
@@ -201,18 +230,79 @@ export class MealRegistrationService {
       config.timezone.timezone
     );
 
-    // Create a registration message immediately if it's between 5 AM and 3 AM next day
-    const now = new Date();
-    const hour = now.getHours();
-    if (hour >= 5 || hour < 3) {
-      await this.createRegistrationMessage();
+    // Schedule the creation of late breakfast registration message at 5 AM
+    this.createLateBreakfastJob = new CronJob(
+      '0 5 * * *', // Run at 5:00 AM every day
+      () => {
+        this.createLateBreakfastMessage();
+      },
+      null,
+      true,
+      config.timezone.timezone
+    );
+
+    // Schedule the end of late breakfast registration at 11 AM
+    this.endLateBreakfastJob = new CronJob(
+      '0 11 * * *', // Run at 11:00 AM every day
+      () => {
+        this.endLateBreakfastRegistration();
+      },
+      null,
+      true,
+      config.timezone.timezone
+    );
+
+    // Schedule the creation of late dinner registration message at 11:30 AM
+    this.createLateDinnerJob = new CronJob(
+      '30 11 * * *', // Run at 11:30 AM every day
+      () => {
+        this.createLateDinnerMessage();
+      },
+      null,
+      true,
+      config.timezone.timezone
+    );
+
+    // Schedule the end of late dinner registration at 6:15 PM
+    this.endLateDinnerJob = new CronJob(
+      '15 18 * * *', // Run at 6:15 PM every day
+      () => {
+        this.endLateDinnerRegistration();
+      },
+      null,
+      true,
+      config.timezone.timezone
+    );
+
+    // In production mode, create messages immediately based on current time
+    if (!config.isDevelopment) {
+      const now = new Date();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+
+      // Create a registration message immediately if it's between 5 AM and 3 AM next day
+      if (hour >= 5 || hour < 3) {
+        await this.createRegistrationMessage();
+      }
+
+      // Create late breakfast message if it's between 5 AM and 11 AM
+      if (hour >= 5 && hour < 11) {
+        await this.createLateBreakfastMessage();
+      }
+
+      // Create late dinner message if it's between 11:30 AM and 6:15 PM
+      if ((hour === 11 && minute >= 30) || (hour > 11 && hour < 18) || (hour === 18 && minute <= 15)) {
+        await this.createLateDinnerMessage();
+      }
+    } else {
+      logger.info('Development mode: Automatic message creation disabled. Use /test commands instead.');
     }
 
     logger.info('Meal registration service started');
   }
 
   /**
-   * Sets up the reaction collector to listen for reactions on the registration message
+   * Sets up the reaction collector to listen for reactions on the registration messages
    */
   private setupReactionCollector(): void {
     if (!this.client) {
@@ -229,6 +319,16 @@ export class MealRegistrationService {
       if (this.currentRegistrationMessage && reaction.message.id === this.currentRegistrationMessage.id) {
         await this.handleReactionAdd(reaction, user);
       }
+
+      // Check if this is our late breakfast registration message
+      if (this.currentLateBreakfastMessage && reaction.message.id === this.currentLateBreakfastMessage.id) {
+        await this.handleLateReactionAdd(reaction, user, 'breakfast');
+      }
+
+      // Check if this is our late dinner registration message
+      if (this.currentLateDinnerMessage && reaction.message.id === this.currentLateDinnerMessage.id) {
+        await this.handleLateReactionAdd(reaction, user, 'dinner');
+      }
     });
 
     // Listen for messageReactionRemove events
@@ -239,6 +339,16 @@ export class MealRegistrationService {
       // Check if this is our registration message
       if (this.currentRegistrationMessage && reaction.message.id === this.currentRegistrationMessage.id) {
         await this.handleReactionRemove(reaction, user);
+      }
+
+      // Check if this is our late breakfast registration message
+      if (this.currentLateBreakfastMessage && reaction.message.id === this.currentLateBreakfastMessage.id) {
+        await this.handleLateReactionRemove(reaction, user, 'breakfast');
+      }
+
+      // Check if this is our late dinner registration message
+      if (this.currentLateDinnerMessage && reaction.message.id === this.currentLateDinnerMessage.id) {
+        await this.handleLateReactionRemove(reaction, user, 'dinner');
       }
     });
 
@@ -560,7 +670,7 @@ export class MealRegistrationService {
   /**
    * Ends the current registration period
    */
-  private async endRegistration(): Promise<void> {
+  public async endRegistration(): Promise<void> {
     logger.info('Attempting to end registration');
 
     if (!this.currentRegistrationMessage) {
@@ -575,7 +685,7 @@ export class MealRegistrationService {
 
       // For development mode, simplify the process to avoid potential errors
       if (config.isDevelopment) {
-        logger.info('Development mode: Using simplified registration ending');
+        logger.info('Development mode: Using simplified registration ending via test command');
 
         try {
           // Get the registration lists for both meal types
@@ -736,6 +846,342 @@ export class MealRegistrationService {
   }
 
   /**
+   * Sends a log message to the late registration log channel using an embed
+   * @param user The user who performed the action
+   * @param action The action performed (add or remove reaction)
+   * @param mealType The type of meal (breakfast or dinner)
+   * @param message The message that was reacted to
+   */
+  private async sendLateLogEmbed(
+    user: User | PartialUser,
+    action: 'add' | 'remove',
+    mealType: 'breakfast' | 'dinner',
+    message: Message
+  ): Promise<void> {
+    if (!this.client) {
+      logger.error('Client not set, cannot send late log message');
+      return;
+    }
+
+    if (!this.lateRegistrationLogChannelId) {
+      logger.error('Late registration log channel not set, cannot send log message');
+      return;
+    }
+
+    try {
+      // Get the channel
+      const channel = await this.client.channels.fetch(this.lateRegistrationLogChannelId);
+
+      if (!channel || !(channel instanceof TextChannel)) {
+        logger.error('Invalid late registration log channel', { channelId: this.lateRegistrationLogChannelId });
+        return;
+      }
+
+      // Get the current time in the configured timezone
+      const now = new Date();
+      const timeStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy HH:mm:ss');
+
+      // Create the embed
+      const embed = new EmbedBuilder()
+        .setColor(action === 'add' ? '#00FF00' : '#FF0000')
+        .setTitle(action === 'add' ? '✅ Đăng ký bữa ăn trễ' : '❌ Hủy đăng ký bữa ăn trễ')
+        .setDescription(`**${user.tag}** đã ${action === 'add' ? 'đăng ký' : 'hủy đăng ký'} **${mealType === 'breakfast' ? 'bữa sáng' : 'bữa tối'} trễ** cho ngày hôm nay`)
+        .addFields(
+          { name: 'Người dùng', value: `<@${user.id}> (${user.id})`, inline: true },
+          { name: 'Thời gian', value: timeStr, inline: true },
+          { name: 'Tin nhắn', value: `[Xem tin nhắn đăng ký](${message.url})`, inline: true }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
+        .setTimestamp();
+
+      // Send the embed
+      await channel.send({ embeds: [embed] });
+    } catch (error) {
+      logger.error('Error sending late log embed', { error, userId: user.id, action, mealType });
+    }
+  }
+
+  /**
+   * Handles a reaction being added to the late registration message
+   * @param reaction The reaction that was added
+   * @param user The user who added the reaction
+   * @param mealType The type of meal (breakfast or dinner)
+   */
+  private async handleLateReactionAdd(
+    reaction: MessageReaction | PartialMessageReaction,
+    user: User | PartialUser,
+    mealType: 'breakfast' | 'dinner'
+  ): Promise<void> {
+    const emoji = reaction.emoji.name;
+    const message = reaction.message;
+
+    // Check if the emoji matches the expected emoji for the meal type
+    if ((mealType === 'breakfast' && emoji === this.LATE_BREAKFAST_EMOJI) ||
+        (mealType === 'dinner' && emoji === this.LATE_DINNER_EMOJI)) {
+      logger.info(`User registered for late ${mealType}`, { userId: user.id, username: user.tag });
+      // Add the user to the meal registration list
+      const db = DatabaseService.getInstance();
+      db.registerMeal(user.id, user.tag || 'Unknown', `late_${mealType}`, message.id.toString());
+      await this.sendLateLogEmbed(user, 'add', mealType, message as Message);
+    }
+  }
+
+  /**
+   * Handles a reaction being removed from the late registration message
+   * @param reaction The reaction that was removed
+   * @param user The user who removed the reaction
+   * @param mealType The type of meal (breakfast or dinner)
+   */
+  private async handleLateReactionRemove(
+    reaction: MessageReaction | PartialMessageReaction,
+    user: User | PartialUser,
+    mealType: 'breakfast' | 'dinner'
+  ): Promise<void> {
+    const emoji = reaction.emoji.name;
+    const message = reaction.message;
+
+    // Check if the emoji matches the expected emoji for the meal type
+    if ((mealType === 'breakfast' && emoji === this.LATE_BREAKFAST_EMOJI) ||
+        (mealType === 'dinner' && emoji === this.LATE_DINNER_EMOJI)) {
+      logger.info(`User unregistered from late ${mealType}`, { userId: user.id, username: user.tag });
+      // Remove the user from the meal registration list
+      const db = DatabaseService.getInstance();
+      db.unregisterMeal(user.id, `late_${mealType}`, message.id.toString());
+      await this.sendLateLogEmbed(user, 'remove', mealType, message as Message);
+    }
+  }
+
+  /**
+   * Creates a new late breakfast registration message
+   */
+  public async createLateBreakfastMessage(): Promise<void> {
+    if (!this.client) {
+      logger.error('Client not set');
+      return;
+    }
+
+    try {
+      // Get the channel
+      const channel = await this.client.channels.fetch(this.lateRegistrationChannelId);
+
+      if (!channel || !(channel instanceof TextChannel)) {
+        logger.error('Invalid late registration channel', { channelId: this.lateRegistrationChannelId });
+        return;
+      }
+
+      // Get today's date for registration
+      const now = new Date();
+      const todayStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
+      // Create the embed
+      const embed = new EmbedBuilder()
+        .setColor('#FF9900')
+        .setTitle('🍳 Đăng ký bữa sáng trễ')
+        .setDescription(`Xin hãy đăng ký bữa sáng trễ cho ngày hôm nay (${todayStr}) bằng cách react vào tin nhắn này.`)
+        .addFields(
+          { name: 'Bữa sáng trễ', value: `React ${this.LATE_BREAKFAST_EMOJI} để đăng ký bữa sáng trễ`, inline: false },
+          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 10 giây (chế độ development)' : 'Từ 5:00 sáng đến 11:00 sáng', inline: false }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
+        .setTimestamp();
+
+      // Send the message
+      const message = await channel.send({ embeds: [embed] });
+
+      // Add the reaction for users to click
+      await message.react(this.LATE_BREAKFAST_EMOJI);
+
+      // Store the current late breakfast registration message
+      this.currentLateBreakfastMessage = message;
+
+      logger.info('Late breakfast registration message created', { messageId: message.id, channelId: channel.id });
+
+      // In development mode, end registration after 10 seconds
+      if (config.isDevelopment) {
+        logger.info('Development mode: Late breakfast registration will end in 10 seconds');
+        setTimeout(async () => {
+          logger.info('Development mode: Ending late breakfast registration now');
+          await this.endLateBreakfastRegistration();
+        }, 10000); // 10 seconds
+      }
+    } catch (error) {
+      logger.error('Error creating late breakfast registration message', { error });
+    }
+  }
+
+  /**
+   * Creates a new late dinner registration message
+   */
+  public async createLateDinnerMessage(): Promise<void> {
+    if (!this.client) {
+      logger.error('Client not set');
+      return;
+    }
+
+    try {
+      // Get the channel
+      const channel = await this.client.channels.fetch(this.lateRegistrationChannelId);
+
+      if (!channel || !(channel instanceof TextChannel)) {
+        logger.error('Invalid late registration channel', { channelId: this.lateRegistrationChannelId });
+        return;
+      }
+
+      // Get today's date for registration
+      const now = new Date();
+      const todayStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
+
+      // Create the embed
+      const embed = new EmbedBuilder()
+        .setColor('#FF9900')
+        .setTitle('🍲 Đăng ký bữa tối trễ')
+        .setDescription(`Xin hãy đăng ký bữa tối trễ cho ngày hôm nay (${todayStr}) bằng cách react vào tin nhắn này.`)
+        .addFields(
+          { name: 'Bữa tối trễ', value: `React ${this.LATE_DINNER_EMOJI} để đăng ký bữa tối trễ`, inline: false },
+          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 10 giây (chế độ development)' : 'Từ 11:30 sáng đến 18:15 chiều', inline: false }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
+        .setTimestamp();
+
+      // Send the message
+      const message = await channel.send({ embeds: [embed] });
+
+      // Add the reaction for users to click
+      await message.react(this.LATE_DINNER_EMOJI);
+
+      // Store the current late dinner registration message
+      this.currentLateDinnerMessage = message;
+
+      logger.info('Late dinner registration message created', { messageId: message.id, channelId: channel.id });
+
+      // In development mode, end registration after 10 seconds
+      if (config.isDevelopment) {
+        logger.info('Development mode: Late dinner registration will end in 10 seconds');
+        setTimeout(async () => {
+          logger.info('Development mode: Ending late dinner registration now');
+          await this.endLateDinnerRegistration();
+        }, 10000); // 10 seconds
+      }
+    } catch (error) {
+      logger.error('Error creating late dinner registration message', { error });
+    }
+  }
+
+  /**
+   * Ends the current late breakfast registration period
+   */
+  public async endLateBreakfastRegistration(): Promise<void> {
+    logger.info('Attempting to end late breakfast registration');
+
+    if (!this.currentLateBreakfastMessage) {
+      logger.info('No active late breakfast registration message to end');
+      return;
+    }
+
+    try {
+      // Get the message
+      const message = this.currentLateBreakfastMessage;
+      logger.info('Found active late breakfast registration message', { messageId: message.id });
+
+      // Get all registered users from the database
+      const db = DatabaseService.getInstance();
+      const registeredUsers = db.getRegisteredUsers('late_breakfast', message.id.toString());
+
+      // Format the list
+      const registeredList = registeredUsers.length > 0
+        ? registeredUsers.map(user => `<@${user.userId}> (${user.username})`).join('\n')
+        : 'Không có ai';
+
+      // Create the summary embed
+      const summaryEmbed = new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('🍳 Kết quả đăng ký bữa sáng trễ')
+        .setDescription('Đăng ký bữa sáng trễ đã kết thúc')
+        .addFields(
+          { name: `Đã đăng ký (${registeredUsers.length})`, value: registeredList.length > 1024 ? registeredList.substring(0, 1021) + '...' : registeredList, inline: false }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
+        .setTimestamp();
+
+      // Update the message
+      await message.edit({ embeds: [summaryEmbed] });
+
+      // Remove all reactions
+      await message.reactions.removeAll();
+
+      // Clear the database for this message
+      db.clearRegistrations(message.id.toString());
+
+      // Clear the current late breakfast registration message
+      this.currentLateBreakfastMessage = null;
+
+      logger.info('Late breakfast registration ended', {
+        messageId: message.id,
+        registeredCount: registeredUsers.length
+      });
+    } catch (error) {
+      logger.error('Error ending late breakfast registration', { error });
+    }
+  }
+
+  /**
+   * Ends the current late dinner registration period
+   */
+  public async endLateDinnerRegistration(): Promise<void> {
+    logger.info('Attempting to end late dinner registration');
+
+    if (!this.currentLateDinnerMessage) {
+      logger.info('No active late dinner registration message to end');
+      return;
+    }
+
+    try {
+      // Get the message
+      const message = this.currentLateDinnerMessage;
+      logger.info('Found active late dinner registration message', { messageId: message.id });
+
+      // Get all registered users from the database
+      const db = DatabaseService.getInstance();
+      const registeredUsers = db.getRegisteredUsers('late_dinner', message.id.toString());
+
+      // Format the list
+      const registeredList = registeredUsers.length > 0
+        ? registeredUsers.map(user => `<@${user.userId}> (${user.username})`).join('\n')
+        : 'Không có ai';
+
+      // Create the summary embed
+      const summaryEmbed = new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('🍲 Kết quả đăng ký bữa tối trễ')
+        .setDescription('Đăng ký bữa tối trễ đã kết thúc')
+        .addFields(
+          { name: `Đã đăng ký (${registeredUsers.length})`, value: registeredList.length > 1024 ? registeredList.substring(0, 1021) + '...' : registeredList, inline: false }
+        )
+        .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
+        .setTimestamp();
+
+      // Update the message
+      await message.edit({ embeds: [summaryEmbed] });
+
+      // Remove all reactions
+      await message.reactions.removeAll();
+
+      // Clear the database for this message
+      db.clearRegistrations(message.id.toString());
+
+      // Clear the current late dinner registration message
+      this.currentLateDinnerMessage = null;
+
+      logger.info('Late dinner registration ended', {
+        messageId: message.id,
+        registeredCount: registeredUsers.length
+      });
+    } catch (error) {
+      logger.error('Error ending late dinner registration', { error });
+    }
+  }
+
+  /**
    * Stops the meal registration service
    */
   public stop(): void {
@@ -748,6 +1194,26 @@ export class MealRegistrationService {
     if (this.endRegistrationJob) {
       this.endRegistrationJob.stop();
       logger.info('End registration job stopped');
+    }
+
+    if (this.createLateBreakfastJob) {
+      this.createLateBreakfastJob.stop();
+      logger.info('Create late breakfast job stopped');
+    }
+
+    if (this.endLateBreakfastJob) {
+      this.endLateBreakfastJob.stop();
+      logger.info('End late breakfast job stopped');
+    }
+
+    if (this.createLateDinnerJob) {
+      this.createLateDinnerJob.stop();
+      logger.info('Create late dinner job stopped');
+    }
+
+    if (this.endLateDinnerJob) {
+      this.endLateDinnerJob.stop();
+      logger.info('End late dinner job stopped');
     }
 
     logger.info('Meal registration service stopped');
