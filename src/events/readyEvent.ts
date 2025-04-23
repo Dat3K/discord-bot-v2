@@ -10,6 +10,7 @@ import { registerCommands } from '../commands/CommandRegistry.js';
 import { registerSlashCommands } from '../commands/SlashCommandRegistry.js';
 import { MealReminderService } from '../services/MealReminderService.js';
 import { MealRegistrationService } from '../services/MealRegistrationService.js';
+import { MemberService } from '../services/MemberService.js';
 import { config } from '../config/config.js';
 
 // Get logger instance
@@ -58,6 +59,23 @@ export async function readyHandler(client: Client): Promise<void> {
     logger.info('Meal registration service started');
   } catch (error) {
     logger.error('Failed to start meal registration service', { error });
+  }
+
+  // Fetch and store all guild members
+  try {
+    logger.info('Fetching and storing guild members...');
+    const memberService = MemberService.getInstance();
+    memberService.setClient(client);
+
+    // Fetch all members
+    await memberService.fetchAndStoreAllMembers();
+
+    // Also fetch members with the tracked role specifically
+    await memberService.fetchAndStoreRoleMembers('1162022091630059531');
+
+    logger.info('Guild members fetched and stored successfully');
+  } catch (error) {
+    logger.error('Failed to fetch and store guild members', { error });
   }
 
   logger.info('Bot is ready');

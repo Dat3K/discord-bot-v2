@@ -13,6 +13,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { addDays } from 'date-fns';
 import { LoggingService } from './LoggingService.js';
 import { DatabaseService } from './DatabaseService.js';
+import { MemberService } from './MemberService.js';
 import { config } from '../config/config.js';
 
 // Get logger instance
@@ -257,13 +258,13 @@ export class MealRegistrationService {
       logger.info('User registered for breakfast', { userId: user.id, username: user.tag });
       // Add the user to the breakfast registration list
       const db = DatabaseService.getInstance();
-      db.registerMeal(user.id, user.tag, 'breakfast', message.id.toString());
+      db.registerMeal(user.id, user.tag || 'Unknown', 'breakfast', message.id.toString());
       await this.sendLogEmbed(user, 'add', 'breakfast', message as Message);
     } else if (emoji === this.DINNER_EMOJI) {
       logger.info('User registered for dinner', { userId: user.id, username: user.tag });
       // Add the user to the dinner registration list
       const db = DatabaseService.getInstance();
-      db.registerMeal(user.id, user.tag, 'dinner', message.id.toString());
+      db.registerMeal(user.id, user.tag || 'Unknown', 'dinner', message.id.toString());
       await this.sendLogEmbed(user, 'add', 'dinner', message as Message);
     }
   }
@@ -375,6 +376,37 @@ export class MealRegistrationService {
         logger.error('Message not in a guild');
         return [];
       }
+
+      // First try to use the MemberService to get members from the database
+      const memberService = MemberService.getInstance();
+      const trackedMembersFromDb = memberService.getTrackedMembers();
+
+      if (trackedMembersFromDb.length > 0) {
+        logger.info(`Using ${trackedMembersFromDb.length} tracked members from database`);
+
+        // Convert database members to GuildMember objects
+        const guildMembers: GuildMember[] = [];
+
+        for (const dbMember of trackedMembersFromDb) {
+          try {
+            const member = await guild.members.fetch(dbMember.userId).catch(() => null);
+            if (member) {
+              guildMembers.push(member);
+            }
+          } catch (error) {
+            logger.warn(`Could not fetch member ${dbMember.userId} from guild`, { error });
+          }
+        }
+
+        if (guildMembers.length > 0) {
+          return guildMembers;
+        }
+
+        logger.warn('No valid guild members found from database, falling back to direct fetch');
+      }
+
+      // Fallback: Fetch all members directly from Discord
+      logger.info('Fetching tracked members directly from Discord');
 
       // Fetch all members (this might be slow for large guilds)
       try {
@@ -556,7 +588,6 @@ export class MealRegistrationService {
 
           // Create a list of all tracked members
           const trackedMembers = await this.getTrackedMembers();
-          const trackedMemberIds = new Set(trackedMembers.map(member => member.id));
 
           // Find members who haven't registered for either meal
           const breakfastRegisteredIds = new Set(breakfastLists.registered.map(user => user.userId));
