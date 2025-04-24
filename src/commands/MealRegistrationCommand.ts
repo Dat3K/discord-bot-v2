@@ -82,7 +82,7 @@ async function handleStatusSubcommand(
     .addFields(
       { name: 'Channel', value: `<#${config.mealRegistration.channelId}>`, inline: true },
       { name: 'Timezone', value: config.timezone.timezone, inline: true },
-      { name: 'Schedule', value: 'Registration opens at 5 AM and closes at 3 AM the next day' }
+      { name: 'Schedule', value: 'Registration opens at 5 AM and closes at 3 AM the next day (UTC-3)' }
     )
     .setFooter({ text: 'Meal Registration Service' })
     .setTimestamp();

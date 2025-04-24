@@ -32,7 +32,7 @@ class Configuration {
         errorNotificationChannelId: getEnv('ERROR_NOTIFICATION_CHANNEL_ID', ''),
       },
       timezone: {
-        timezone: getEnv('TZ', 'Asia/Bangkok'), // Default to GMT+7
+        timezone: getEnv('TZ', 'America/Sao_Paulo'), // Default to UTC-3
       },
       mealReminder: {
         channelId: getEnv('MEAL_REMINDER_CHANNEL_ID', ''),

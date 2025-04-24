@@ -460,7 +460,7 @@ export class MealRegistrationService {
         .addFields(
           { name: 'Bữa sáng', value: `React ${this.BREAKFAST_EMOJI} để đăng ký bữa sáng`, inline: false },
           { name: 'Bữa tối', value: `React ${this.DINNER_EMOJI} để đăng ký bữa tối`, inline: false },
-          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 10 giây (chế độ development)' : 'Từ 5:00 sáng hôm nay đến 3:00 sáng ngày mai', inline: false }
+          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 1 phút (chế độ development)' : 'Từ 5:00 sáng hôm nay đến 3:00 sáng ngày mai (UTC-3)', inline: false }
         )
         .setFooter({ text: 'Hệ thống đăng ký bữa ăn tự động' })
         .setTimestamp();
@@ -477,13 +477,13 @@ export class MealRegistrationService {
 
       logger.info('Registration message created', { messageId: message.id, channelId: channel.id });
 
-      // In development mode, end registration after 10 seconds
+      // In development mode, end registration after 1 minute
       if (config.isDevelopment) {
-        logger.info('Development mode: Registration will end in 10 seconds');
+        logger.info('Development mode: Registration will end in 1 minute');
         setTimeout(async () => {
           logger.info('Development mode: Ending registration now');
           await this.endRegistration();
-        }, 10000); // 10 seconds
+        }, 60000); // 1 minute
       }
     } catch (error) {
       logger.error('Error creating registration message', { error });
@@ -1024,7 +1024,7 @@ export class MealRegistrationService {
         .setDescription(`Xin hãy đăng ký bữa sáng trễ cho ngày hôm nay (${todayStr}) bằng cách react vào tin nhắn này.`)
         .addFields(
           { name: 'Bữa sáng trễ', value: `React ${this.LATE_BREAKFAST_EMOJI} để đăng ký bữa sáng trễ`, inline: false },
-          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 10 giây (chế độ development)' : 'Từ 5:00 sáng đến 11:00 sáng', inline: false }
+          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 1 phút (chế độ development)' : 'Từ 5:00 sáng đến 11:00 sáng (UTC-3)', inline: false }
         )
         .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
         .setTimestamp();
@@ -1040,13 +1040,13 @@ export class MealRegistrationService {
 
       logger.info('Late breakfast registration message created', { messageId: message.id, channelId: channel.id });
 
-      // In development mode, end registration after 10 seconds
+      // In development mode, end registration after 1 minute
       if (config.isDevelopment) {
-        logger.info('Development mode: Late breakfast registration will end in 10 seconds');
+        logger.info('Development mode: Late breakfast registration will end in 1 minute');
         setTimeout(async () => {
           logger.info('Development mode: Ending late breakfast registration now');
           await this.endLateBreakfastRegistration();
-        }, 10000); // 10 seconds
+        }, 60000); // 1 minute
       }
     } catch (error) {
       logger.error('Error creating late breakfast registration message', { error });
@@ -1088,7 +1088,7 @@ export class MealRegistrationService {
         .setDescription(`Xin hãy đăng ký bữa tối trễ cho ngày hôm nay (${todayStr}) bằng cách react vào tin nhắn này.`)
         .addFields(
           { name: 'Bữa tối trễ', value: `React ${this.LATE_DINNER_EMOJI} để đăng ký bữa tối trễ`, inline: false },
-          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 10 giây (chế độ development)' : 'Từ 11:30 sáng đến 18:15 chiều', inline: false }
+          { name: 'Thời gian đăng ký', value: config.isDevelopment ? 'Chỉ 1 phút (chế độ development)' : 'Từ 11:30 sáng đến 18:15 chiều (UTC-3)', inline: false }
         )
         .setFooter({ text: 'Hệ thống đăng ký bữa ăn trễ' })
         .setTimestamp();
@@ -1104,13 +1104,13 @@ export class MealRegistrationService {
 
       logger.info('Late dinner registration message created', { messageId: message.id, channelId: channel.id });
 
-      // In development mode, end registration after 10 seconds
+      // In development mode, end registration after 1 minute
       if (config.isDevelopment) {
-        logger.info('Development mode: Late dinner registration will end in 10 seconds');
+        logger.info('Development mode: Late dinner registration will end in 1 minute');
         setTimeout(async () => {
           logger.info('Development mode: Ending late dinner registration now');
           await this.endLateDinnerRegistration();
-        }, 10000); // 10 seconds
+        }, 60000); // 1 minute
       }
     } catch (error) {
       logger.error('Error creating late dinner registration message', { error });

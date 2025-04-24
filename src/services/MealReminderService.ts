@@ -180,10 +180,10 @@ export class MealReminderService {
   private createMealReminderEmbed(): EmbedBuilder {
     const now = new Date();
 
-    // Format date in UTC+7 timezone
+    // Format date in UTC-3 timezone
     const dateStr = formatInTimeZone(now, config.timezone.timezone, 'dd/MM/yyyy');
     const timeStr = formatInTimeZone(now, config.timezone.timezone, 'HH:mm:ss');
-    const timezoneStr = 'UTC+7';
+    const timezoneStr = 'UTC-3';
 
     // Get tomorrow's date for registration
     const tomorrow = new Date(now);

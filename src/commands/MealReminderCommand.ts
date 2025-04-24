@@ -64,7 +64,7 @@ async function handleStatusSubcommand(
     .addFields(
       { name: 'Channel', value: `<#${config.mealReminder.channelId}>`, inline: true },
       { name: 'Timezone', value: config.timezone.timezone, inline: true },
-      { name: 'Schedule', value: 'Reminders are sent at 6 AM, 12 PM, 6 PM, and 12 AM' }
+      { name: 'Schedule', value: 'Reminders are sent at 6 AM, 12 PM, 6 PM, and 12 AM (UTC-3)' }
     )
     .setFooter({ text: 'Meal Reminder Service' })
     .setTimestamp();
