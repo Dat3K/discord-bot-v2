@@ -7,6 +7,7 @@
 
 import { createLogger, format, transports, Logger } from 'winston';
 import { config } from '../config/config';
+import type { LogLevel } from '../config/config';
 
 // Observer pattern for error notifications
 type ErrorObserver = (error: Error, context?: Record<string, unknown>) => void;
@@ -17,7 +18,7 @@ export class LoggingService {
   private errorObservers: ErrorObserver[] = [];
 
   private constructor() {
-    // Create Winston logger with console transport only
+    // Create Winston logger with enhanced console transport
     this.logger = createLogger({
       level: config.logging.level,
       format: format.combine(
@@ -28,14 +29,46 @@ export class LoggingService {
       ),
       defaultMeta: { service: 'discord-bot' },
       transports: [
-        // Console transport only
+        // Enhanced console transport with better visual formatting
         new transports.Console({
           format: format.combine(
-            format.colorize(),
+            format.colorize({ all: true }),
             format.printf(({ timestamp, level, message, ...meta }) => {
-              return `${timestamp} [${level}]: ${message} ${
-                Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-              }`;
+              // Create a visual separator based on log level
+              let prefix = '';
+              if (level.includes('error')) {
+                prefix = '❌ ';
+              } else if (level.includes('warn')) {
+                prefix = '⚠️ ';
+              } else if (level.includes('info')) {
+                prefix = '📝 ';
+              } else if (level.includes('debug')) {
+                prefix = '🔍 ';
+              } else if (level.includes('http')) {
+                prefix = '🌐 ';
+              } else if (level.includes('verbose')) {
+                prefix = '🔊 ';
+              } else if (level.includes('silly')) {
+                prefix = '🤪 ';
+              }
+
+              // Format metadata for better readability
+              let metaStr = '';
+              if (Object.keys(meta).length) {
+                // Filter out service from meta to avoid duplication
+                const { service, ...restMeta } = meta;
+
+                // Format the metadata as a pretty JSON string with indentation
+                if (Object.keys(restMeta).length) {
+                  metaStr = '\n' + JSON.stringify(restMeta, null, 2)
+                    .split('\n')
+                    .map(line => '  ' + line) // Add indentation to each line
+                    .join('\n');
+                }
+              }
+
+              // Return the formatted log message
+              return `[${timestamp}] ${prefix}${level}: ${message}${metaStr}`;
             })
           ),
         })
@@ -98,5 +131,63 @@ export class LoggingService {
 
   public silly(message: string, meta?: Record<string, unknown>): void {
     this.logger.silly(message, meta);
+  }
+
+  /**
+   * Creates a visual divider in the logs
+   * @param title Optional title for the divider
+   * @param level Log level to use (default: info)
+   */
+  public divider(title?: string, level: LogLevel = 'info'): void {
+    const dividerLength = 60;
+    const dividerChar = '=';
+
+    if (title) {
+      // Calculate padding to center the title
+      const padding = Math.max(0, Math.floor((dividerLength - title.length - 2) / 2));
+      const leftPad = dividerChar.repeat(padding);
+      const rightPad = dividerChar.repeat(dividerLength - padding - title.length - 2);
+      const divider = `${leftPad} ${title} ${rightPad}`;
+
+      // Log the divider with the title
+      this.log(level, divider);
+    } else {
+      // Log a simple divider
+      this.log(level, dividerChar.repeat(dividerLength));
+    }
+  }
+
+  /**
+   * Generic log method that can be used with any log level
+   * @param level Log level
+   * @param message Message to log
+   * @param meta Additional metadata
+   */
+  private log(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
+    switch (level) {
+      case 'error':
+        this.error(message, meta);
+        break;
+      case 'warn':
+        this.warn(message, meta);
+        break;
+      case 'info':
+        this.info(message, meta);
+        break;
+      case 'http':
+        this.http(message, meta);
+        break;
+      case 'verbose':
+        this.verbose(message, meta);
+        break;
+      case 'debug':
+        this.debug(message, meta);
+        break;
+      case 'silly':
+        this.silly(message, meta);
+        break;
+      default:
+        this.info(message, meta);
+    }
   }
 }
