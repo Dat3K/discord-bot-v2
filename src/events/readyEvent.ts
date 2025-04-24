@@ -20,7 +20,12 @@ const logger = LoggingService.getInstance();
  * @param client The Discord.js client
  */
 export async function readyHandler(client: Client): Promise<void> {
-  logger.info(`Logged in as ${client.user?.tag}`);
+  logger.divider('BOT CONNECTED');
+  logger.info(`Logged in as ${client.user?.tag}`, {
+    id: client.user?.id,
+    discriminator: client.user?.discriminator,
+    verified: client.user?.verified
+  });
 
   // Set bot status
   client.user?.setPresence({
@@ -32,15 +37,19 @@ export async function readyHandler(client: Client): Promise<void> {
   });
 
   // Register slash commands
+  logger.divider('REGISTERING COMMANDS');
   await registerSlashCommands();
 
   // Start meal reminder service
+  logger.divider('STARTING SERVICES');
   try {
     const mealReminderService = MealReminderService.getInstance();
     mealReminderService.setClient(client);
     mealReminderService.setReminderChannel(config.mealReminder.channelId);
     await mealReminderService.start();
-    logger.info('Meal reminder service started');
+    logger.info('Meal reminder service started', {
+      channelId: config.mealReminder.channelId
+    });
   } catch (error) {
     logger.error('Failed to start meal reminder service', { error });
   }
@@ -54,27 +63,40 @@ export async function readyHandler(client: Client): Promise<void> {
     // Set the late registration channel to use the error notification channel in development mode
     mealRegistrationService.setLateRegistrationChannel();
     await mealRegistrationService.start();
-    logger.info('Meal registration service started');
+    logger.info('Meal registration service started', {
+      registrationChannelId: config.mealRegistration.channelId,
+      logChannelId: config.mealRegistration.logChannelId,
+      lateChannelId: config.isDevelopment ? config.logging.errorNotificationChannelId : config.mealRegistration.lateChannelId
+    });
   } catch (error) {
     logger.error('Failed to start meal registration service', { error });
   }
 
   // Fetch and store all guild members
+  logger.divider('FETCHING MEMBERS');
   try {
     logger.info('Fetching and storing guild members...');
     const memberService = MemberService.getInstance();
     memberService.setClient(client);
 
     // Fetch all members
-    await memberService.fetchAndStoreAllMembers();
+    const allMembersCount = await memberService.fetchAndStoreAllMembers();
 
     // Also fetch members with the tracked role specifically
-    await memberService.fetchAndStoreRoleMembers('1162022091630059531');
+    const roleMembersCount = await memberService.fetchAndStoreRoleMembers('1162022091630059531');
 
-    logger.info('Guild members fetched and stored successfully');
+    logger.info('Guild members fetched and stored successfully', {
+      allMembersCount,
+      roleMembersCount,
+      trackedRoleId: '1162022091630059531'
+    });
   } catch (error) {
     logger.error('Failed to fetch and store guild members', { error });
   }
 
-  logger.info('Bot is ready');
+  logger.divider('INITIALIZATION COMPLETE');
+  logger.info('Bot is ready and fully operational', {
+    mode: config.isDevelopment ? 'Development' : 'Production',
+    timezone: config.timezone.timezone
+  });
 }

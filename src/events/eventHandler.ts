@@ -21,6 +21,7 @@ const logger = LoggingService.getInstance();
  * @param client The Discord.js client
  */
 export function setupEventHandlers(client: Client): void {
+  logger.divider('EVENT HANDLERS');
   logger.info('Setting up event handlers');
 
   // Set up slash command handler
@@ -81,4 +82,5 @@ export function setupEventHandlers(client: Client): void {
   });
 
   logger.info('Event handlers set up successfully');
+  logger.divider('READY FOR CONNECTIONS');
 }

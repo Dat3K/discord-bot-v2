@@ -49,11 +49,12 @@ export class MemberService {
 
   /**
    * Fetches all members from the guild and stores them in the database
+   * @returns The number of members stored
    */
-  public async fetchAndStoreAllMembers(): Promise<void> {
+  public async fetchAndStoreAllMembers(): Promise<number> {
     if (!this.client) {
       logger.error('Client not set, cannot fetch members');
-      return;
+      return 0;
     }
 
     try {
@@ -90,19 +91,22 @@ export class MemberService {
       }
 
       logger.info(`Stored ${memberCount} members in the database`);
+      return memberCount;
     } catch (error) {
       logger.error('Error fetching and storing members', { error });
+      return 0;
     }
   }
 
   /**
    * Fetches members with a specific role and stores them in the database
    * @param roleId The role ID to filter by
+   * @returns The number of members stored
    */
-  public async fetchAndStoreRoleMembers(roleId: string): Promise<void> {
+  public async fetchAndStoreRoleMembers(roleId: string): Promise<number> {
     if (!this.client) {
       logger.error('Client not set, cannot fetch members');
-      return;
+      return 0;
     }
 
     try {
@@ -142,8 +146,10 @@ export class MemberService {
       }
 
       logger.info(`Stored ${memberCount} members with role ${role.name} in the database`);
+      return memberCount;
     } catch (error) {
       logger.error('Error fetching and storing role members', { error, roleId });
+      return 0;
     }
   }
 
