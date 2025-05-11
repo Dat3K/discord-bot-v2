@@ -1,4 +1,5 @@
-import { Client, Events, WebSocketShardEvents } from 'discord.js';
+import { Client, Events } from 'discord.js';
+import type { CloseEvent } from 'discord.js';
 import { logger } from '../utils/logger';
 
 /**
@@ -6,19 +7,20 @@ import { logger } from '../utils/logger';
  * @param client The Discord client
  */
 export default (client: Client): void => {
-  // Handle WebSocket disconnection
-  client.ws.on(WebSocketShardEvents.Destroyed, ({ reconnecting }) => {
-    if (reconnecting) {
-      logger.warn('WebSocket connection lost, attempting to reconnect...');
-    } else {
-      logger.error('WebSocket connection lost and not reconnecting');
-    }
+  // Handle shard disconnect event
+  client.on(Events.ShardDisconnect, (closeEvent: CloseEvent, shardId: number) => {
+    logger.warn(`Shard ${shardId} disconnected (Code: ${closeEvent.code})`);
   });
-  
-  // Handle general disconnection
-  client.on(Events.Warn, (message) => {
+
+  // Handle general disconnection warnings
+  client.on(Events.Warn, (message: string) => {
     if (message.includes('disconnect') || message.includes('connection')) {
       logger.warn(`Discord connection warning: ${message}`);
     }
+  });
+
+  // Handle WebSocket errors
+  client.on(Events.ShardError, (error: Error, shardId: number) => {
+    logger.error(`Shard ${shardId} encountered a WebSocket error:`, error);
   });
 };
