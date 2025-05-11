@@ -1,4 +1,4 @@
-import { Client } from 'discord.js';
+import { Client, Events } from 'discord.js';
 import { logger } from '../utils/logger';
 
 /**
@@ -6,12 +6,13 @@ import { logger } from '../utils/logger';
  * @param client The Discord client
  */
 export default (client: Client): void => {
-  // Discord.js v14 doesn't have a specific reconnecting event
-  // Instead, we can use the shardReconnecting event if using shards
-  // or handle reconnection logic in the disconnect event
-  
-  // For WebSocket reconnection attempts
-  client.ws.on('reconnecting', () => {
-    logger.warn('WebSocket is reconnecting...');
+  // Handle shard reconnection
+  client.on(Events.ShardReconnecting, (shardId: number) => {
+    logger.warn(`Shard ${shardId} is reconnecting...`);
+  });
+
+  // Handle shard resume
+  client.on(Events.ShardResume, (shardId: number, replayedEvents: number) => {
+    logger.info(`Shard ${shardId} resumed connection. Replayed ${replayedEvents} events.`);
   });
 };
