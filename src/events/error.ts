@@ -6,7 +6,7 @@ import { logger } from '../utils/logger';
  * @param client The Discord client
  */
 export default (client: Client): void => {
-  client.on(Events.Error, (error) => {
+  client.on(Events.Error, (error: Error) => {
     logger.error('Discord client error:', error);
   });
 };
