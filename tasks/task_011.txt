@@ -1,0 +1,49 @@
+# Task ID: 11
+# Title: Implement regular meal registration system
+# Status: pending
+# Dependencies: 7, 8, 9, 10
+# Priority: high
+# Description: Create the system for daily meal registration using reactions
+# Details:
+Implement the regular meal registration system. Schedule daily messages at 5:00 AM with registration ending at 3:00 AM the next day. Create embed messages with breakfast (☀️) and dinner (🌙) reaction options. Store registration data in the database and implement end-of-period reporting to show who registered and who didn't.
+
+# Test Strategy:
+Test the meal registration system by verifying that messages are sent at the correct time, reactions are tracked correctly, and end-of-period reports are generated accurately.
+
+# Subtasks:
+## 1. Implement Daily Message Scheduling [pending]
+### Dependencies: None
+### Description: Implement the core logic for scheduling daily messages to be sent at 5:00 AM.
+### Details:
+Use a scheduling library or service to schedule the daily message delivery. Consider handling server restarts and time drift.
+
+## 2. Implement Registration End Time Logic [pending]
+### Dependencies: None
+### Description: Implement the logic to automatically close registration at 3:00 AM the next day.
+### Details:
+Use a scheduling mechanism or a time-checking function to determine when to close registration. Ensure it handles different timezones correctly.
+
+## 3. Design and Create Embed Messages [pending]
+### Dependencies: None
+### Description: Design and create the embed messages for breakfast and dinner registration, including reaction options.
+### Details:
+Design visually appealing embed messages with clear instructions and appropriate reaction emojis for breakfast and dinner choices.
+
+## 4. Implement Reaction Tracking [pending]
+### Dependencies: 11.3
+### Description: Implement the logic to track user reactions to the embed messages for breakfast and dinner choices.
+### Details:
+Listen for reaction events on the embed messages and record user choices based on their reactions.
+
+## 5. Implement Database Storage for Registration Data [pending]
+### Dependencies: 11.4
+### Description: Implement the database schema and logic to store registration data, including user choices and timestamps.
+### Details:
+Design a database schema to store user IDs, breakfast/dinner choices, and registration timestamps. Implement functions to write and retrieve this data.
+
+## 6. Implement End-of-Period Reporting [pending]
+### Dependencies: 11.5
+### Description: Implement the logic to generate end-of-period reports based on the stored registration data.
+### Details:
+Query the database to generate reports summarizing breakfast and dinner choices for the period. Consider different report formats (e.g., CSV, PDF).
+

@@ -1,0 +1,485 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Set up project structure and dependencies",
+      "description": "Initialize the project with TypeScript, Bun, and Discord.js, and set up the basic folder structure",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Create a new TypeScript project with Bun as the runtime. Install Discord.js and other necessary dependencies. Set up the basic folder structure for the bot including config, commands, events, and utilities. Initialize Git repository and create initial configuration files.",
+      "testStrategy": "Verify that the project structure is set up correctly and all dependencies can be installed without errors. Run a basic test to ensure the environment is working properly."
+    },
+    {
+      "id": 2,
+      "title": "Implement bot authentication and connection",
+      "description": "Set up the Discord bot authentication and connection to the Discord API",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "details": "Create the main bot file that handles authentication with the Discord API using the bot token from environment variables. Implement the connection logic and basic event handlers for connection events (ready, disconnect, reconnect). Set up proper error handling for connection issues.",
+      "testStrategy": "Test that the bot can successfully connect to Discord using the provided token. Verify that the bot responds appropriately to connection events."
+    },
+    {
+      "id": 3,
+      "title": "Create configuration system",
+      "description": "Implement a configuration system using environment variables and JSON files",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "details": "Create a configuration system that loads settings from both .env file (for sensitive data like tokens and channel IDs) and a config.json file (for customizable settings like message content and emojis). Implement validation for required configuration values and provide meaningful error messages for missing or invalid configuration.",
+      "testStrategy": "Test loading configuration from both .env and config.json files. Verify that validation works correctly for required values and that appropriate error messages are displayed."
+    },
+    {
+      "id": 4,
+      "title": "Set up SQLite database with bun:sqlite",
+      "description": "Implement the SQLite database for storing message registration data",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "details": "Set up the SQLite database using bun:sqlite. Create the database schema with the active_registrations table as specified in the PRD. Implement functions for database operations (create, read, update, delete) and ensure proper error handling. Create initialization logic to set up the database and tables if they don't exist.",
+      "testStrategy": "Test database operations to ensure they work correctly. Verify that the database is properly initialized on first run and that data persistence works as expected."
+    },
+    {
+      "id": 5,
+      "title": "Implement logging system",
+      "description": "Create a comprehensive logging system for console and Discord channel logging",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        3
+      ],
+      "details": "Implement a logging system that logs to both console and Discord channels. Create different log levels (debug, info, warn, error) and ensure logs are formatted consistently. Implement Discord channel logging for errors and important events. Ensure logs include timestamps and relevant context information.",
+      "testStrategy": "Test logging at different levels and verify that logs appear in both console and appropriate Discord channels. Test error logging to ensure errors are properly captured and reported."
+    },
+    {
+      "id": 6,
+      "title": "Implement timezone handling (GMT+7)",
+      "description": "Set up proper timezone handling for all time-based operations",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "details": "Implement timezone handling using a library like date-fns-tz or luxon. Ensure all time-based operations consistently use GMT+7 timezone. Create utility functions for common time operations like formatting dates, calculating time differences, and scheduling events based on specific times in the GMT+7 timezone.",
+      "testStrategy": "Test timezone handling by verifying that dates and times are correctly calculated and displayed in GMT+7. Test scheduling functions to ensure they trigger at the correct times."
+    },
+    {
+      "id": 7,
+      "title": "Create scheduler for timed messages",
+      "description": "Implement a scheduler system for sending messages at specific times",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        2,
+        3,
+        6
+      ],
+      "details": "Create a scheduler system that can schedule messages to be sent at specific times. Implement logic for recurring schedules (e.g., daily at 5:00 AM) and one-time schedules. Ensure the scheduler is resilient to bot restarts by persisting scheduled tasks. Implement proper error handling for scheduling failures.",
+      "testStrategy": "Test scheduling messages at specific times and verify they are sent correctly. Test persistence of scheduled tasks across bot restarts. Test error handling for scheduling failures.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Basic Scheduler Infrastructure",
+          "description": "Set up the foundational components for the scheduler, including data structures and initial scheduling logic.",
+          "dependencies": [],
+          "details": "Choose a suitable scheduling library or framework. Define the core data structures for storing schedule information. Implement the basic scheduling loop.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement One-Time Schedule Logic",
+          "description": "Develop the functionality to schedule and execute messages for a single, specific time.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement the logic to handle one-time schedules. This includes parsing the schedule time, storing it, and triggering the message sending at the specified time.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement Recurring Schedule Logic",
+          "description": "Develop the functionality to schedule and execute messages based on recurring patterns (e.g., daily, weekly, monthly).",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement the logic to handle recurring schedules. This includes defining the recurrence patterns, calculating the next execution time, and triggering the message sending accordingly.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement Persistence for Scheduler Data",
+          "description": "Implement a mechanism to persist schedule data to a database or file system to ensure resilience to bot restarts.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Choose a suitable persistence mechanism (e.g., database, file system). Implement the logic to save and load schedule data. Ensure that the scheduler can recover from restarts and continue scheduling messages.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement Error Handling and Logging",
+          "description": "Implement error handling and logging for scheduling failures to ensure proper monitoring and debugging.",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement error handling for common scheduling failures (e.g., invalid schedule time, database connection errors). Implement logging to track scheduling events and errors. Implement retry mechanisms for transient errors.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Implement embed message creation",
+      "description": "Create a system for generating and sending embed messages",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        3
+      ],
+      "details": "Implement a system for creating and sending Discord embed messages. Create templates for different types of embeds (reminder, meal registration, late registration). Ensure embeds are visually appealing and clearly communicate their purpose. Implement functions for adding reactions to embed messages.",
+      "testStrategy": "Test creating and sending different types of embed messages. Verify that embeds display correctly and that reactions can be added successfully."
+    },
+    {
+      "id": 9,
+      "title": "Implement reaction tracking and storage",
+      "description": "Create a system for tracking and storing user reactions to messages",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        2,
+        4,
+        8
+      ],
+      "details": "Implement reaction tracking for embed messages. Create event handlers for reaction add and remove events. Store reaction data in the SQLite database including user ID, message ID, reaction type, and timestamp. Implement filtering for valid reactions based on message type and emoji.",
+      "testStrategy": "Test adding and removing reactions to messages. Verify that reaction data is correctly stored in the database and that invalid reactions are properly filtered.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up SQLite Database",
+          "description": "Create the SQLite database and define the table schema to store reaction data. The table should include columns for user ID, message ID, reaction type, and timestamp.",
+          "dependencies": [],
+          "details": "Define the database schema with appropriate data types for each column (INTEGER for IDs, TEXT for reaction type, REAL for timestamp).",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Reaction Add Event Handler",
+          "description": "Create an event handler that triggers when a reaction is added to a message. This handler should extract relevant information from the event.",
+          "dependencies": [],
+          "details": "The event handler should extract the user ID, message ID, and reaction (emoji) from the event object.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement Reaction Remove Event Handler",
+          "description": "Create an event handler that triggers when a reaction is removed from a message. This handler should extract relevant information from the event.",
+          "dependencies": [],
+          "details": "The event handler should extract the user ID, message ID, and reaction (emoji) from the event object.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement Reaction Filtering Logic",
+          "description": "Implement filtering logic to validate reactions based on message type and emoji. This will ensure only valid reactions are stored in the database.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Create a function that checks if a reaction is valid based on predefined criteria (e.g., specific emojis allowed for certain message types).",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Store Reaction Data in Database",
+          "description": "Store the reaction data (user ID, message ID, reaction type, and timestamp) into the SQLite database after passing the filtering logic.",
+          "dependencies": [
+            1,
+            4
+          ],
+          "details": "Insert the extracted and validated reaction data into the database table. Ensure the timestamp is recorded accurately.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Implement user role filtering",
+      "description": "Create a system for filtering users based on their roles",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        2
+      ],
+      "details": "Implement user role filtering to only track reactions from users with specific roles (e.g., role ID 1162022091630059531). Create functions for fetching all members with a specific role and for checking if a user has a specific role. Ensure role data is kept up-to-date when users' roles change.",
+      "testStrategy": "Test role filtering by verifying that only reactions from users with the specified role are tracked. Test fetching members with a specific role and checking if a user has a specific role."
+    },
+    {
+      "id": 11,
+      "title": "Implement regular meal registration system",
+      "description": "Create the system for daily meal registration using reactions",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "details": "Implement the regular meal registration system. Schedule daily messages at 5:00 AM with registration ending at 3:00 AM the next day. Create embed messages with breakfast (☀️) and dinner (🌙) reaction options. Store registration data in the database and implement end-of-period reporting to show who registered and who didn't.",
+      "testStrategy": "Test the meal registration system by verifying that messages are sent at the correct time, reactions are tracked correctly, and end-of-period reports are generated accurately.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Daily Message Scheduling",
+          "description": "Implement the core logic for scheduling daily messages to be sent at 5:00 AM.",
+          "dependencies": [],
+          "details": "Use a scheduling library or service to schedule the daily message delivery. Consider handling server restarts and time drift.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Registration End Time Logic",
+          "description": "Implement the logic to automatically close registration at 3:00 AM the next day.",
+          "dependencies": [],
+          "details": "Use a scheduling mechanism or a time-checking function to determine when to close registration. Ensure it handles different timezones correctly.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Design and Create Embed Messages",
+          "description": "Design and create the embed messages for breakfast and dinner registration, including reaction options.",
+          "dependencies": [],
+          "details": "Design visually appealing embed messages with clear instructions and appropriate reaction emojis for breakfast and dinner choices.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement Reaction Tracking",
+          "description": "Implement the logic to track user reactions to the embed messages for breakfast and dinner choices.",
+          "dependencies": [
+            3
+          ],
+          "details": "Listen for reaction events on the embed messages and record user choices based on their reactions.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement Database Storage for Registration Data",
+          "description": "Implement the database schema and logic to store registration data, including user choices and timestamps.",
+          "dependencies": [
+            4
+          ],
+          "details": "Design a database schema to store user IDs, breakfast/dinner choices, and registration timestamps. Implement functions to write and retrieve this data.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement End-of-Period Reporting",
+          "description": "Implement the logic to generate end-of-period reports based on the stored registration data.",
+          "dependencies": [
+            5
+          ],
+          "details": "Query the database to generate reports summarizing breakfast and dinner choices for the period. Consider different report formats (e.g., CSV, PDF).",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Implement late registration system",
+      "description": "Create the system for late meal registration",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "details": "Implement the late registration system for morning (5:00-11:00) and evening (11:30-18:15) periods. Create embed messages with appropriate reaction options. Store registration data in the database and implement end-of-period reporting to show who registered late.",
+      "testStrategy": "Test the late registration system by verifying that messages are sent at the correct time, reactions are tracked correctly, and end-of-period reports are generated accurately.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Database Schema Update for Late Registration",
+          "description": "Modify the database schema to include fields for tracking late registration periods (morning/evening) and associated timestamps.",
+          "dependencies": [],
+          "details": "Add columns for 'late_registration_start', 'late_registration_end', 'period' (morning/evening) to the registration table.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Late Registration Logic",
+          "description": "Implement the core logic for handling late registrations, including checking if the current time falls within the allowed late registration periods (morning/evening).",
+          "dependencies": [
+            1
+          ],
+          "details": "Create functions to determine if a user is eligible for late registration based on the current time and the defined morning/evening periods. Handle overlapping periods.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Embed Message Creation for Late Registration",
+          "description": "Create embed messages with appropriate reaction options for late registration, clearly indicating the period (morning/evening) and any associated late registration fees or rules.",
+          "dependencies": [
+            2
+          ],
+          "details": "Design embed messages that display the registration period, instructions, and relevant information. Include reaction options for confirming or canceling late registration.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Data Storage for Late Registrations",
+          "description": "Store late registration data in the database, including the user ID, registration period, timestamp, and any other relevant information.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Update the registration process to store the 'late_registration_start', 'late_registration_end', and 'period' values in the database when a user registers late.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "End-of-Period Reporting for Late Registrations",
+          "description": "Implement end-of-period reporting to generate reports on late registrations, including the number of late registrations, the total revenue generated from late registration fees, and other relevant statistics.",
+          "dependencies": [
+            4
+          ],
+          "details": "Create reports that summarize late registration data for each period (morning/evening). Include metrics such as the number of late registrations, revenue, and user demographics.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Timezone Handling for Late Registrations",
+          "description": "Ensure correct timezone handling for late registration periods, ensuring that the registration logic and reporting are accurate regardless of the user's timezone.",
+          "dependencies": [
+            2,
+            5
+          ],
+          "details": "Implement timezone conversion to ensure that the late registration periods are correctly interpreted and applied based on the server's timezone. Store all timestamps in UTC.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Implement reaction logging",
+      "description": "Create a system for logging user reactions to messages",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        5,
+        9
+      ],
+      "details": "Implement reaction logging to track when users add or remove reactions. Create embed messages for logging that include user ID, nickname, reaction type, and timestamp. Send logs to the appropriate log channels based on the message type.",
+      "testStrategy": "Test reaction logging by verifying that logs are sent to the correct channels when users add or remove reactions. Verify that logs include all required information."
+    },
+    {
+      "id": 14,
+      "title": "Implement development mode",
+      "description": "Create a development mode for testing with accelerated timeframes",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        7,
+        11,
+        12
+      ],
+      "details": "Implement a development mode that can be enabled via environment variables. In development mode, registration periods should end after 10 seconds instead of at the scheduled time. Create test commands for triggering registration messages and other functionality. Ensure development mode doesn't interfere with production use.",
+      "testStrategy": "Test development mode by verifying that registration periods end after 10 seconds and that test commands work correctly. Verify that development mode can be enabled and disabled without affecting production functionality."
+    },
+    {
+      "id": 15,
+      "title": "Implement state recovery after restart",
+      "description": "Create a system for recovering the bot's state after a restart",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        4,
+        7,
+        9,
+        11,
+        12
+      ],
+      "details": "Implement state recovery logic that runs when the bot starts. Read active registrations from the database and restore their state (timers, reaction listeners). Handle cases where messages no longer exist or registration periods have already ended. Ensure the bot can recover gracefully from crashes or restarts.",
+      "testStrategy": "Test state recovery by restarting the bot while registrations are active. Verify that the bot correctly restores timers and reaction listeners for existing registrations. Test handling of edge cases like missing messages or ended registration periods.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Initialize State Recovery Module",
+          "description": "Create the core module responsible for managing the bot's state recovery process upon startup.",
+          "dependencies": [],
+          "details": "Set up the basic structure and configuration for the state recovery module, including logging and initial error handling.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Read Active Registrations from Database",
+          "description": "Query the database to retrieve all currently active registration records.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement the database query logic to fetch active registrations, including handling potential database connection errors and data parsing.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Restore Timers for Active Registrations",
+          "description": "Re-establish timers for each active registration based on their remaining duration.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement the logic to calculate the remaining time for each registration and reschedule the corresponding timers. Handle cases where timers have already expired.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Restore Reaction Listeners for Active Registrations",
+          "description": "Re-establish reaction listeners for each active registration to monitor user interactions.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement the logic to re-register reaction listeners for each active registration, ensuring that the bot can track user reactions and update registration status accordingly.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Handle Missing Messages",
+          "description": "Implement logic to identify and handle messages related to registrations that are no longer available (e.g., deleted messages).",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Implement checks to verify the existence of relevant messages. If messages are missing, implement appropriate actions, such as notifying administrators or invalidating the registration.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Handle Ended Registration Periods",
+          "description": "Implement logic to identify and finalize registrations whose periods have ended during bot downtime.",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Check if the registration period has ended for any active registrations. If so, finalize the registration process and update the database accordingly.",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "projectName": "Discord Bot for Meal Registration",
+    "version": "1.0.0",
+    "lastUpdated": "2023-12-25T12:00:00Z"
+  }
+}

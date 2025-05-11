@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Implement timezone handling (GMT+7)
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Set up proper timezone handling for all time-based operations
+# Details:
+Implement timezone handling using a library like date-fns-tz or luxon. Ensure all time-based operations consistently use GMT+7 timezone. Create utility functions for common time operations like formatting dates, calculating time differences, and scheduling events based on specific times in the GMT+7 timezone.
+
+# Test Strategy:
+Test timezone handling by verifying that dates and times are correctly calculated and displayed in GMT+7. Test scheduling functions to ensure they trigger at the correct times.

@@ -1,0 +1,173 @@
+<PRD>
+# PRD: Bot Lập Lịch Tin Nhắn Discord
+
+## 1. Giới thiệu và Mục tiêu
+
+### 1.1. Mục tiêu chính
+*   Tự động gửi tin nhắn thông báo định kỳ.
+*   Tự động gửi tin nhắn đăng ký cơm và đăng ký trễ (sáng/tối) theo lịch trình cụ thể, cho phép người dùng tương tác (react) để đăng ký.
+*   Tổng hợp và gửi danh sách người dùng đã đăng ký sau khi thời gian đăng ký kết thúc.
+
+### 1.2. Vấn đề giải quyết/Giá trị mang lại
+*   Tự động hóa việc gửi thông báo và quy trình đăng ký cơm/đi trễ.
+*   Tổ chức hóa việc thu thập đăng ký, giảm thiểu công việc thủ công và sai sót.
+*   Cung cấp thông tin đăng ký rõ ràng.
+
+### 1.3. Đối tượng người dùng chính
+*   Toàn bộ thành viên trong server Discord.
+
+## 2. Mô tả Chức năng Chi tiết
+
+### 2.1. Lập lịch gửi tin nhắn (Core)
+*   **Múi giờ hoạt động:** GMT+7 (cấu hình trong logic của bot).
+*   **Kênh gửi tin nhắn:** ID kênh cấu hình trong file `.env`:
+    *   `TEST_LOG_CHANNEL_ID`
+    *   `MEAL_REMINDER_CHANNEL_ID` (Kênh thông báo chung)
+    *   `MEAL_REGISTRATION_CHANNEL_ID` (Kênh đăng ký cơm)
+    *   `MEAL_REGISTRATION_LOG_CHANNEL_ID` (Kênh log đăng ký cơm)
+    *   `LATE_MEAL_MORNING_REGISTRATION_CHANNEL_ID` (Kênh đăng ký trễ sáng)
+    *   `LATE_MEAL_MORNING_REGISTRATION_LOG_CHANNEL_ID` (Kênh log đăng ký trễ sáng)
+    *   `LATE_MEAL_EVENING_REGISTRATION_CHANNEL_ID` (Kênh đăng ký trễ tối)
+    *   `LATE_MEAL_EVENING_REGISTRATION_LOG_CHANNEL_ID` (Kênh log đăng ký trễ tối)
+*   **Định dạng tin nhắn:** Tất cả các tin nhắn do bot gửi sẽ ở dạng **embed** của Discord.
+*   **Lịch trình gửi tin nhắn:**
+    *   **Tin nhắn thông báo (Reminder):**
+        *   Gửi mỗi 6 tiếng, bắt đầu từ 00:00 hàng ngày (ví dụ: 00:00, 06:00, 12:00, 18:00).
+        *   Kênh: `MEAL_REMINDER_CHANNEL_ID`.
+    *   **Tin nhắn đăng ký cơm:**
+        *   Thời gian gửi: 05:00 hàng ngày.
+        *   Thời gian kết thúc đăng ký: 03:00 ngày hôm sau.
+        *   Kênh: `MEAL_REGISTRATION_CHANNEL_ID`.
+    *   **Tin nhắn đăng ký trễ sáng:**
+        *   Thời gian gửi: 05:00 hàng ngày.
+        *   Thời gian kết thúc đăng ký: 11:00 cùng ngày.
+        *   Kênh: `LATE_MEAL_MORNING_REGISTRATION_CHANNEL_ID`.
+    *   **Tin nhắn đăng ký trễ tối:**
+        *   Thời gian gửi: 11:30 hàng ngày.
+        *   Thời gian kết thúc đăng ký: 18:15 cùng ngày.
+        *   Kênh: `LATE_MEAL_EVENING_REGISTRATION_CHANNEL_ID`.
+
+### 2.2. Loại tin nhắn: Thông báo (Reminder)
+*   **Nội dung:** Tùy chỉnh được trong file config (ví dụ: `config.json`).
+*   **Mục đích:** Chỉ để thông báo, không yêu cầu tương tác.
+
+### 2.3. Loại tin nhắn: Đăng ký
+*   **Cơ chế lưu trữ và phục hồi trạng thái tin nhắn đăng ký:**
+    *   Bot sẽ sử dụng một file database **SQLite** (ví dụ: `bot_state.sqlite`) được quản lý bởi `bun:sqlite` để lưu trữ thông tin về các tin nhắn đăng ký đang hoạt động.
+    *   Một bảng, ví dụ `active_registrations`, sẽ được tạo với các cột như:
+        *   `message_id` (TEXT, PRIMARY KEY): ID của tin nhắn Discord.
+        *   `channel_id` (TEXT): ID của kênh chứa tin nhắn.
+        *   `registration_type` (TEXT): Loại đăng ký (ví dụ: `MEAL_REGULAR`, `LATE_MORNING`, `LATE_EVENING`).
+        *   `end_timestamp` (INTEGER): Thời điểm kết thúc đăng ký (dưới dạng Unix timestamp).
+        *   `identifier_string` (TEXT, NULLABLE): Chuỗi định danh duy nhất được nhúng trong tin nhắn (ví dụ: `DANGKICOM 03:00 26/12/2023`) để kiểm tra chéo hoặc nhận diện thủ công nếu cần.
+    *   **Khi bot gửi tin nhắn đăng ký mới:**
+        1.  Gửi tin nhắn embed lên Discord.
+        2.  Sau khi nhận được `message_id` và `channel_id` thành công, **ngay lập tức `INSERT` một bản ghi mới** vào bảng `active_registrations` trong file SQLite.
+        3.  Thiết lập một bộ đếm thời gian (timer/scheduler) trong bộ nhớ để thực hiện hành động chốt danh sách khi đến `end_timestamp`.
+    *   **Khi bot khởi động lại:**
+        1.  Đọc tất cả các bản ghi từ bảng `active_registrations` trong file SQLite.
+        2.  Với mỗi bản ghi:
+            *   So sánh `end_timestamp` với thời gian hiện tại.
+            *   Nếu thời gian hiện tại **trước** `end_timestamp`:
+                *   Fetch lại đối tượng tin nhắn từ Discord API sử dụng `channel_id` và `message_id`.
+                *   Nếu tin nhắn tồn tại, tiếp tục thiết lập timer và lắng nghe reactions.
+                *   Nếu tin nhắn không tồn tại (có thể đã bị xóa thủ công), xóa bản ghi khỏi SQLite.
+            *   Nếu thời gian hiện tại đã **sau** `end_timestamp`:
+                *   Fetch lại tin nhắn. Nếu tồn tại và có vẻ chưa được xử lý (ví dụ, reactions chưa bị xóa), bot sẽ cố gắng xử lý ngay (đọc reactions, gửi tổng kết, xóa reactions, sau đó xóa bản ghi khỏi SQLite).
+                *   Nếu không thể xử lý hoặc tin nhắn không còn, xóa bản ghi khỏi SQLite.
+    *   **Khi một phiên đăng ký hoàn tất (bình thường):**
+        1.  Sau khi bot đã xử lý xong một tin nhắn đăng ký (đọc reactions, gửi tổng kết, xóa reactions trên Discord).
+        2.  **Ngay lập tức `DELETE` bản ghi tương ứng** của tin nhắn đó khỏi bảng `active_registrations` trong file SQLite.
+*   **Xử lý khi đến thời gian kết thúc đăng ký (cả khi hoạt động bình thường và sau khi phục hồi):**
+    *   Bot đọc tất cả các reactions hợp lệ trên tin nhắn đăng ký.
+    *   Tạo danh sách những người đã đăng ký (bao gồm **nickname trong server** của họ).
+    *   **Gửi một tin nhắn embed mới** chứa danh sách này vào kênh đăng ký tương ứng.
+    *   Bot sẽ **xóa tất cả các reactions** trên tin nhắn đăng ký gốc sau khi đã tổng hợp xong.
+    *   Xóa bản ghi khỏi SQLite (như đã mô tả ở trên).
+*   **Log tương tác:**
+    *   Mỗi lần người dùng thêm hoặc gỡ reaction trên tin nhắn đăng ký, hành động (UserID, nickname, loại reaction, thời gian) sẽ được log vào kênh log tương ứng.
+*   **2.3.1. Tin nhắn đăng ký cơm**
+    *   **Nội dung mời đăng ký:** Tùy chỉnh được trong file config (ví dụ: "Đăng ký cơm! Sáng: ☀️, Tối: 🌙. React trước [Thời gian kết thúc]!").
+    *   **Cách thức đăng ký:** Người dùng react với emoji:
+        *   Emoji cho đăng ký cơm sáng (ví dụ: ☀️) - Cấu hình được.
+        *   Emoji cho đăng ký cơm tối (ví dụ: 🌙) - Cấu hình được.
+    *   **Lưu trữ thông tin đăng ký (tạm thời):** Nickname.
+    *   **Hủy đăng ký:** Bỏ reaction trong thời gian đăng ký.
+*   **2.3.2. Tin nhắn đăng ký trễ sáng**
+    *   **Nội dung mời đăng ký:** Tùy chỉnh được (ví dụ: "Đăng ký đi trễ/về sớm (buổi sáng)! React ⏰ trước [Thời gian kết thúc]!").
+    *   **Cách thức đăng ký:** React với emoji (ví dụ: ⏰) - Cấu hình được.
+    *   Tương tự các mục khác của đăng ký cơm.
+*   **2.3.3. Tin nhắn đăng ký trễ tối**
+    *   **Nội dung mời đăng ký:** Tùy chỉnh được (ví dụ: "Đăng ký đi trễ/về sớm (buổi chiều/tối)! React ⏰ trước [Thời gian kết thúc]!").
+    *   **Cách thức đăng ký:** React với emoji (ví dụ: ⏰) - Cấu hình được.
+    *   Tương tự các mục khác của đăng ký cơm.
+
+### 2.4. Quản lý và Cấu hình Bot
+*   **Phương thức cấu hình:** File config (ví dụ: `config.json` cho nội dung, emoji) và file `.env` (ID kênh, token bot).
+*   **Quyền hạn bot (Permissions):**
+    *   `Send Messages`
+    *   `Read Message History`
+    *   `Add Reactions`
+    *   `Manage Messages` (để xóa reactions)
+    *   `Embed Links`
+    *   `View Channel` (cho tất cả các kênh bot tương tác)
+    *   (Cân nhắc không cấp quyền Administrator đầy đủ nếu chỉ cần các quyền trên).
+
+## 3. Yêu cầu Kỹ thuật
+
+*   **Ngôn ngữ:** TypeScript
+*   **Runtime:** Bun
+*   **Thư viện Discord:** **discord.js (phiên bản mới nhất)**
+*   **Lưu trữ dữ liệu:**
+    *   **Cấu hình:** File JSON (`config.json`) và file `.env`.
+    *   **Lưu trữ trạng thái tin nhắn đăng ký:**
+        *   Sử dụng **`bun:sqlite`** để tạo và quản lý một file database SQLite (ví dụ: `bot_state.sqlite`).
+        *   Bảng `active_registrations` (như mô tả ở mục 2.3).
+*   **Triển khai (Deployment):** AWS Free Tier.
+
+## 4. Giao diện Người dùng và Trải nghiệm Người dùng (UX/UI - cho bot)
+
+*   **Tương tác chính:** Reactions trên tin nhắn embed của bot.
+*   **Thông báo lỗi:** Log lỗi chi tiết cho quản trị viên (console, kênh log riêng).
+*   **Tin nhắn của bot:** Sử dụng Discord Embeds rõ ràng, có cấu trúc, hiển thị rõ mục đích, thời gian kết thúc, emoji hợp lệ. Embed tổng hợp danh sách cũng cần rõ ràng.
+
+## 5. Tiêu chí Thành công (Success Metrics)
+
+*   Bot hoạt động ổn định, gửi tin nhắn đúng lịch trình.
+*   Người dùng tương tác đăng ký/hủy thành công và dễ dàng.
+*   Không có lỗi nghiêm trọng trong việc thu thập và tổng hợp danh sách.
+*   Giảm tải công việc thủ công.
+*   Log tương tác đầy đủ, chính xác.
+
+## 6. Ngoài phạm vi (Out of Scope - cho phiên bản đầu)
+
+*   Lệnh slash command để quản lý/cấu hình bot trực tiếp từ Discord.
+*   Giao diện web để cấu hình.
+*   Nhắc nhở cá nhân cho người chưa đăng ký.
+*   Lưu trữ lịch sử đăng ký dài hạn.
+*   Hỗ trợ đa server với cấu hình riêng.
+
+## 7. Điểm cần lưu ý trong quá trình phát triển
+
+*   **Xử lý múi giờ (Timezone Handling):** Đảm bảo tất cả các hoạt động liên quan đến thời gian (lập lịch, so sánh thời gian kết thúc) đều nhất quán sử dụng GMT+7. Các thư viện như `date-fns-tz` hoặc `luxon` có thể hữu ích.
+*   **Rate Limits của Discord API:** Khi bot khởi động lại và fetch tin nhắn từ nhiều kênh, hoặc khi có nhiều tương tác reaction, cần lưu ý đến giới hạn tần suất truy cập API của Discord để tránh bị tạm khóa.
+*   **Tính nhất quán dữ liệu với SQLite:**
+    *   Đảm bảo các thao tác với database (INSERT, DELETE) được thực hiện ngay sau các hành động tương ứng trên Discord (gửi tin nhắn thành công, xử lý tin nhắn hoàn tất) để giảm thiểu khả năng không nhất quán nếu bot crash.
+    *   Đối với các thao tác phức tạp hơn, `bun:sqlite` hỗ trợ transactions.
+*   **Khởi tạo Database và Bảng:** Khi bot khởi động lần đầu hoặc nếu file DB không tồn tại, cần có logic để tạo file `bot_state.sqlite` và bảng `active_registrations` với schema chính xác.
+*   **Xử lý lỗi khi tương tác DB:** Triển khai xử lý lỗi cẩn thận cho tất cả các thao tác đọc/ghi database.
+*   **Backup và Bảo trì DB (Mở rộng):** Có thể cân nhắc việc backup file SQLite định kỳ cho các ứng dụng quan trọng hơn.
+
+## 8. Thông số Kỹ thuật
+
+*   **Discord Bot Token:** [REDACTED]
+*   **Client ID:** 1157213890380316754
+*   **Guild ID:** 1148282995665547308
+*   **Role ID for tracking:** 1162022091630059531
+*   **Error notification channel:** 1149187511340515399
+*   **Meal reminder channel:** 1148282996391149573
+*   **Meal registration channel:** 1152273873086185504
+*   **Meal registration log channel:** 1284201024458068050
+*   **Late meal registration channel:** 1158435828117286962
+*   **Late meal registration log channel:** 1284201138106798241
+</PRD>

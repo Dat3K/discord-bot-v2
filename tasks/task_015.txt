@@ -1,0 +1,49 @@
+# Task ID: 15
+# Title: Implement state recovery after restart
+# Status: pending
+# Dependencies: 4, 7, 9, 11, 12
+# Priority: high
+# Description: Create a system for recovering the bot's state after a restart
+# Details:
+Implement state recovery logic that runs when the bot starts. Read active registrations from the database and restore their state (timers, reaction listeners). Handle cases where messages no longer exist or registration periods have already ended. Ensure the bot can recover gracefully from crashes or restarts.
+
+# Test Strategy:
+Test state recovery by restarting the bot while registrations are active. Verify that the bot correctly restores timers and reaction listeners for existing registrations. Test handling of edge cases like missing messages or ended registration periods.
+
+# Subtasks:
+## 1. Initialize State Recovery Module [pending]
+### Dependencies: None
+### Description: Create the core module responsible for managing the bot's state recovery process upon startup.
+### Details:
+Set up the basic structure and configuration for the state recovery module, including logging and initial error handling.
+
+## 2. Read Active Registrations from Database [pending]
+### Dependencies: 15.1
+### Description: Query the database to retrieve all currently active registration records.
+### Details:
+Implement the database query logic to fetch active registrations, including handling potential database connection errors and data parsing.
+
+## 3. Restore Timers for Active Registrations [pending]
+### Dependencies: 15.2
+### Description: Re-establish timers for each active registration based on their remaining duration.
+### Details:
+Implement the logic to calculate the remaining time for each registration and reschedule the corresponding timers. Handle cases where timers have already expired.
+
+## 4. Restore Reaction Listeners for Active Registrations [pending]
+### Dependencies: 15.2
+### Description: Re-establish reaction listeners for each active registration to monitor user interactions.
+### Details:
+Implement the logic to re-register reaction listeners for each active registration, ensuring that the bot can track user reactions and update registration status accordingly.
+
+## 5. Handle Missing Messages [pending]
+### Dependencies: 15.3, 15.4
+### Description: Implement logic to identify and handle messages related to registrations that are no longer available (e.g., deleted messages).
+### Details:
+Implement checks to verify the existence of relevant messages. If messages are missing, implement appropriate actions, such as notifying administrators or invalidating the registration.
+
+## 6. Handle Ended Registration Periods [pending]
+### Dependencies: 15.3, 15.4
+### Description: Implement logic to identify and finalize registrations whose periods have ended during bot downtime.
+### Details:
+Check if the registration period has ended for any active registrations. If so, finalize the registration process and update the database accordingly.
+

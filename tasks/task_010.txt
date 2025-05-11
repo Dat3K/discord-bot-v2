@@ -1,0 +1,11 @@
+# Task ID: 10
+# Title: Implement user role filtering
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Create a system for filtering users based on their roles
+# Details:
+Implement user role filtering to only track reactions from users with specific roles (e.g., role ID 1162022091630059531). Create functions for fetching all members with a specific role and for checking if a user has a specific role. Ensure role data is kept up-to-date when users' roles change.
+
+# Test Strategy:
+Test role filtering by verifying that only reactions from users with the specified role are tracked. Test fetching members with a specific role and checking if a user has a specific role.

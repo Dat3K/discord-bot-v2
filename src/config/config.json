@@ -1,0 +1,45 @@
+{
+  "bot": {
+    "name": "Meal Registration Bot",
+    "version": "1.0.0"
+  },
+  "messages": {
+    "reminder": {
+      "title": "Reminder",
+      "description": "This is a reminder message. Please check the registration channels for meal registration.",
+      "color": "#3498db"
+    },
+    "mealRegistration": {
+      "title": "Meal Registration",
+      "description": "Please react with the following emojis to register for meals:\n☀️ - Breakfast\n🌙 - Dinner",
+      "color": "#2ecc71",
+      "footer": "Registration ends at {endTime}"
+    },
+    "lateMorningRegistration": {
+      "title": "Late Morning Registration",
+      "description": "Please react with ⏰ if you will be late in the morning.",
+      "color": "#e74c3c",
+      "footer": "Registration ends at {endTime}"
+    },
+    "lateEveningRegistration": {
+      "title": "Late Evening Registration",
+      "description": "Please react with ⏰ if you will be late in the evening.",
+      "color": "#f39c12",
+      "footer": "Registration ends at {endTime}"
+    },
+    "registrationEnd": {
+      "title": "Registration Ended",
+      "description": "The registration period has ended. Here is the list of registered users:",
+      "color": "#9b59b6",
+      "footer": "Registration ended at {endTime}"
+    }
+  },
+  "emojis": {
+    "breakfast": "☀️",
+    "dinner": "🌙",
+    "late": "⏰"
+  },
+  "database": {
+    "filename": "bot_state.sqlite"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "discord-bot-v2",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "^5.8.3"
+  },
+  "version": "1.0.0",
+  "description": "To install dependencies:",
+  "main": "dist/index.js",
+  "dependencies": {
+    "@types/luxon": "^3.6.2",
+    "date-fns-tz": "^3.2.0",
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.5.0",
+    "luxon": "^3.6.1"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dat3K/discord-bot-v2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Dat3K/discord-bot-v2/issues"
+  },
+  "homepage": "https://github.com/Dat3K/discord-bot-v2#readme"
+}

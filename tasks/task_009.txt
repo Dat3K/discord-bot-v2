@@ -1,0 +1,43 @@
+# Task ID: 9
+# Title: Implement reaction tracking and storage
+# Status: pending
+# Dependencies: 2, 4, 8
+# Priority: high
+# Description: Create a system for tracking and storing user reactions to messages
+# Details:
+Implement reaction tracking for embed messages. Create event handlers for reaction add and remove events. Store reaction data in the SQLite database including user ID, message ID, reaction type, and timestamp. Implement filtering for valid reactions based on message type and emoji.
+
+# Test Strategy:
+Test adding and removing reactions to messages. Verify that reaction data is correctly stored in the database and that invalid reactions are properly filtered.
+
+# Subtasks:
+## 1. Set up SQLite Database [pending]
+### Dependencies: None
+### Description: Create the SQLite database and define the table schema to store reaction data. The table should include columns for user ID, message ID, reaction type, and timestamp.
+### Details:
+Define the database schema with appropriate data types for each column (INTEGER for IDs, TEXT for reaction type, REAL for timestamp).
+
+## 2. Implement Reaction Add Event Handler [pending]
+### Dependencies: None
+### Description: Create an event handler that triggers when a reaction is added to a message. This handler should extract relevant information from the event.
+### Details:
+The event handler should extract the user ID, message ID, and reaction (emoji) from the event object.
+
+## 3. Implement Reaction Remove Event Handler [pending]
+### Dependencies: None
+### Description: Create an event handler that triggers when a reaction is removed from a message. This handler should extract relevant information from the event.
+### Details:
+The event handler should extract the user ID, message ID, and reaction (emoji) from the event object.
+
+## 4. Implement Reaction Filtering Logic [pending]
+### Dependencies: 9.2, 9.3
+### Description: Implement filtering logic to validate reactions based on message type and emoji. This will ensure only valid reactions are stored in the database.
+### Details:
+Create a function that checks if a reaction is valid based on predefined criteria (e.g., specific emojis allowed for certain message types).
+
+## 5. Store Reaction Data in Database [pending]
+### Dependencies: 9.1, 9.4
+### Description: Store the reaction data (user ID, message ID, reaction type, and timestamp) into the SQLite database after passing the filtering logic.
+### Details:
+Insert the extracted and validated reaction data into the database table. Ensure the timestamp is recorded accurately.
+

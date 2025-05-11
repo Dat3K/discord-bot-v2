@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Set up project structure and dependencies
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Initialize the project with TypeScript, Bun, and Discord.js, and set up the basic folder structure
+# Details:
+Create a new TypeScript project with Bun as the runtime. Install Discord.js and other necessary dependencies. Set up the basic folder structure for the bot including config, commands, events, and utilities. Initialize Git repository and create initial configuration files.
+
+# Test Strategy:
+Verify that the project structure is set up correctly and all dependencies can be installed without errors. Run a basic test to ensure the environment is working properly.

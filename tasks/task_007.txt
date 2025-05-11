@@ -1,0 +1,43 @@
+# Task ID: 7
+# Title: Create scheduler for timed messages
+# Status: pending
+# Dependencies: 2, 3, 6
+# Priority: high
+# Description: Implement a scheduler system for sending messages at specific times
+# Details:
+Create a scheduler system that can schedule messages to be sent at specific times. Implement logic for recurring schedules (e.g., daily at 5:00 AM) and one-time schedules. Ensure the scheduler is resilient to bot restarts by persisting scheduled tasks. Implement proper error handling for scheduling failures.
+
+# Test Strategy:
+Test scheduling messages at specific times and verify they are sent correctly. Test persistence of scheduled tasks across bot restarts. Test error handling for scheduling failures.
+
+# Subtasks:
+## 1. Implement Basic Scheduler Infrastructure [pending]
+### Dependencies: None
+### Description: Set up the foundational components for the scheduler, including data structures and initial scheduling logic.
+### Details:
+Choose a suitable scheduling library or framework. Define the core data structures for storing schedule information. Implement the basic scheduling loop.
+
+## 2. Implement One-Time Schedule Logic [pending]
+### Dependencies: 7.1
+### Description: Develop the functionality to schedule and execute messages for a single, specific time.
+### Details:
+Implement the logic to handle one-time schedules. This includes parsing the schedule time, storing it, and triggering the message sending at the specified time.
+
+## 3. Implement Recurring Schedule Logic [pending]
+### Dependencies: 7.1
+### Description: Develop the functionality to schedule and execute messages based on recurring patterns (e.g., daily, weekly, monthly).
+### Details:
+Implement the logic to handle recurring schedules. This includes defining the recurrence patterns, calculating the next execution time, and triggering the message sending accordingly.
+
+## 4. Implement Persistence for Scheduler Data [pending]
+### Dependencies: 7.2, 7.3
+### Description: Implement a mechanism to persist schedule data to a database or file system to ensure resilience to bot restarts.
+### Details:
+Choose a suitable persistence mechanism (e.g., database, file system). Implement the logic to save and load schedule data. Ensure that the scheduler can recover from restarts and continue scheduling messages.
+
+## 5. Implement Error Handling and Logging [pending]
+### Dependencies: 7.4
+### Description: Implement error handling and logging for scheduling failures to ensure proper monitoring and debugging.
+### Details:
+Implement error handling for common scheduling failures (e.g., invalid schedule time, database connection errors). Implement logging to track scheduling events and errors. Implement retry mechanisms for transient errors.
+

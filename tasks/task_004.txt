@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Set up SQLite database with bun:sqlite
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Implement the SQLite database for storing message registration data
+# Details:
+Set up the SQLite database using bun:sqlite. Create the database schema with the active_registrations table as specified in the PRD. Implement functions for database operations (create, read, update, delete) and ensure proper error handling. Create initialization logic to set up the database and tables if they don't exist.
+
+# Test Strategy:
+Test database operations to ensure they work correctly. Verify that the database is properly initialized on first run and that data persistence works as expected.

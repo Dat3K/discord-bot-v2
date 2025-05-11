@@ -1,0 +1,11 @@
+# Task ID: 13
+# Title: Implement reaction logging
+# Status: pending
+# Dependencies: 5, 9
+# Priority: medium
+# Description: Create a system for logging user reactions to messages
+# Details:
+Implement reaction logging to track when users add or remove reactions. Create embed messages for logging that include user ID, nickname, reaction type, and timestamp. Send logs to the appropriate log channels based on the message type.
+
+# Test Strategy:
+Test reaction logging by verifying that logs are sent to the correct channels when users add or remove reactions. Verify that logs include all required information.

@@ -1,0 +1,55 @@
+# Task ID: 14
+# Title: Implement development mode
+# Status: pending
+# Dependencies: 7, 11, 12
+# Priority: medium
+# Description: Create a development mode for testing with accelerated timeframes and redirected messages.
+# Details:
+Implement a development mode that can be enabled via environment variables. In development mode, registration periods should end after 10 seconds instead of at the scheduled time. All messages (including announcements, meal registrations, and late registrations) should be sent to a designated test channel (TEST_LOG_CHANNEL_ID) instead of the regular channels. Create test commands for triggering registration messages and other functionality. Ensure development mode doesn't interfere with production use.
+
+# Test Strategy:
+Test development mode by verifying that registration periods end after 10 seconds and that test commands work correctly. Verify that all messages are redirected to the test channel in development mode. Verify that development mode can be enabled and disabled without affecting production functionality.
+
+# Subtasks:
+## 1. Implement Development Mode Check [pending]
+### Dependencies: None
+### Description: Implement a check using environment variables (e.g., `NODE_ENV=development`) to determine if the bot is running in development mode.
+### Details:
+Read environment variables and set a boolean flag indicating development mode.
+
+## 2. Accelerate Registration Period [pending]
+### Dependencies: 14.1
+### Description: Modify the registration period to 10 seconds when in development mode.
+### Details:
+Use the development mode flag to conditionally set the registration period duration.
+
+## 3. Create Test Commands [pending]
+### Dependencies: 14.1
+### Description: Implement commands to trigger registration messages for testing purposes.
+### Details:
+Add slash commands or other methods to manually trigger registration events.
+
+## 4. Implement Visual Indicator [pending]
+### Dependencies: 14.1
+### Description: Add a visual indicator (e.g., a status message or bot presence) to clearly show when the bot is in development mode.
+### Details:
+Modify the bot's status or add a message to a specific channel indicating development mode.
+
+## 5. Test Production Interference [pending]
+### Dependencies: 14.2, 14.3, 14.4
+### Description: Thoroughly test to ensure development mode changes do not affect production behavior.
+### Details:
+Run tests in a production-like environment to verify no unintended side effects.
+
+## 6. Redirect Messages to Test Channel [pending]
+### Dependencies: 14.1
+### Description: Implement logic to redirect all bot messages to the TEST_LOG_CHANNEL_ID when in development mode.
+### Details:
+Modify the message sending functions to check the development mode flag and send messages to the test channel if enabled. This includes announcements, registration confirmations, and late registration notifications.
+
+## 7. Verify Message Redirection [pending]
+### Dependencies: 14.6
+### Description: Verify that all messages are correctly redirected to the TEST_LOG_CHANNEL_ID in development mode.
+### Details:
+Manually trigger different types of messages (announcements, registrations, late registrations) and confirm they appear in the test channel and not in the regular channels.
+

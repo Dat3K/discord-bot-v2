@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Implement embed message creation
+# Status: pending
+# Dependencies: 2, 3
+# Priority: medium
+# Description: Create a system for generating and sending embed messages
+# Details:
+Implement a system for creating and sending Discord embed messages. Create templates for different types of embeds (reminder, meal registration, late registration). Ensure embeds are visually appealing and clearly communicate their purpose. Implement functions for adding reactions to embed messages.
+
+# Test Strategy:
+Test creating and sending different types of embed messages. Verify that embeds display correctly and that reactions can be added successfully.
