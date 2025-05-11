@@ -9,7 +9,7 @@ export enum LogLevel {
   ERROR = 3,
 }
 
-// Current log level from environment variable
+// Get log level from environment variable directly to avoid circular dependencies
 const currentLogLevel = (process.env.LOG_LEVEL?.toLowerCase() || 'info') as string;
 const LOG_LEVEL = {
   'debug': LogLevel.DEBUG,
@@ -27,7 +27,7 @@ const COLORS = {
   blink: '\x1b[5m',
   reverse: '\x1b[7m',
   hidden: '\x1b[8m',
-  
+
   black: '\x1b[30m',
   red: '\x1b[31m',
   green: '\x1b[32m',
@@ -36,7 +36,7 @@ const COLORS = {
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
   white: '\x1b[37m',
-  
+
   bgBlack: '\x1b[40m',
   bgRed: '\x1b[41m',
   bgGreen: '\x1b[42m',
@@ -67,11 +67,11 @@ export function setErrorChannel(channel: TextChannel) {
 function log(level: LogLevel, message: string, error?: Error) {
   // Skip if below current log level
   if (level < LOG_LEVEL) return;
-  
+
   const timestamp = formatDateTime(getCurrentTime(), 'yyyy-MM-dd HH:mm:ss');
   let prefix = '';
   let color = '';
-  
+
   switch (level) {
     case LogLevel.DEBUG:
       prefix = 'DEBUG';
@@ -90,15 +90,15 @@ function log(level: LogLevel, message: string, error?: Error) {
       color = COLORS.red;
       break;
   }
-  
+
   // Console output
   console.log(`${color}[${timestamp}] [${prefix}]${COLORS.reset} ${message}`);
-  
+
   // Log stack trace for errors
   if (error && level >= LogLevel.ERROR) {
     console.error(`${COLORS.red}${error.stack || error}${COLORS.reset}`);
   }
-  
+
   // Send to Discord if it's an error and we have an error channel
   if (level === LogLevel.ERROR && errorChannel) {
     const errorMessage = error ? `\n\`\`\`\n${error.stack || error}\n\`\`\`` : '';

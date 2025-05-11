@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import path from 'path';
 import fs from 'fs';
-import config from '../config/config.json';
+import config from '../config';
 
 // Ensure the database directory exists
 const dbDir = path.join(process.cwd(), 'data');
@@ -9,7 +9,7 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const dbPath = path.join(dbDir, config.database.filename);
+const dbPath = path.join(dbDir, config.json.database.filename);
 const db = new Database(dbPath);
 
 // Initialize database with required tables

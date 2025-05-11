@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 
-// Set the default timezone to GMT+7
-const TIMEZONE = 'Asia/Bangkok'; // GMT+7
+// Get timezone from environment variable directly to avoid circular dependencies
+const TIMEZONE = process.env.TZ || 'UTC';
 
 /**
  * Get the current time in GMT+7
@@ -27,7 +27,7 @@ export function formatDateTime(dateTime: DateTime, format: string = 'HH:mm dd/MM
 export function parseTimeString(timeString: string, referenceDate?: DateTime): DateTime {
   const [hours, minutes] = timeString.split(':').map(Number);
   const reference = referenceDate || getCurrentTime();
-  
+
   return reference.set({
     hour: hours,
     minute: minutes,
@@ -43,12 +43,12 @@ export function parseTimeString(timeString: string, referenceDate?: DateTime): D
 export function getNextOccurrence(timeString: string): DateTime {
   const targetTime = parseTimeString(timeString);
   const now = getCurrentTime();
-  
+
   // If the target time is in the past, add one day
   if (targetTime < now) {
     return targetTime.plus({ days: 1 });
   }
-  
+
   return targetTime;
 }
 
@@ -70,11 +70,11 @@ export function isTimeBetween(startTimeString: string, endTimeString: string): b
   const now = getCurrentTime();
   const startTime = parseTimeString(startTimeString);
   const endTime = parseTimeString(endTimeString);
-  
+
   // Handle case where end time is on the next day
   if (endTime < startTime) {
     return now >= startTime || now <= endTime;
   }
-  
+
   return now >= startTime && now <= endTime;
 }

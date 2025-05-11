@@ -1,20 +1,12 @@
-import dotenv from 'dotenv';
 import { createClient, connectClient, disconnectClient } from './utils/client';
 import { registerEvents } from './events';
 import { logger } from './utils/logger';
-
-// Load environment variables
-dotenv.config();
+import config, { setDiscordChannels } from './config';
+import { TextChannel } from 'discord.js';
 
 // Main function to start the bot
 async function main() {
   try {
-    // Validate required environment variables
-    const token = process.env.BOT_TOKEN;
-    if (!token) {
-      throw new Error('BOT_TOKEN is not defined in environment variables');
-    }
-
     // Create and configure the Discord client
     const client = createClient();
 
@@ -22,7 +14,52 @@ async function main() {
     registerEvents(client);
 
     // Connect to Discord
-    await connectClient(client, token);
+    await connectClient(client, config.env.BOT_TOKEN);
+
+    // Set up Discord channels once client is ready
+    client.once('ready', () => {
+      try {
+        const guild = client.guilds.cache.get(config.env.GUILD_ID);
+        if (!guild) {
+          throw new Error(`Guild with ID ${config.env.GUILD_ID} not found`);
+        }
+
+        // Set up channel references
+        const channels: {[key: string]: TextChannel | undefined} = {
+          testLog: guild.channels.cache.get(config.env.TEST_LOG_CHANNEL_ID) as TextChannel,
+          mealReminder: guild.channels.cache.get(config.env.MEAL_REMINDER_CHANNEL_ID) as TextChannel,
+          mealRegistration: guild.channels.cache.get(config.env.MEAL_REGISTRATION_CHANNEL_ID) as TextChannel,
+          mealRegistrationLog: guild.channels.cache.get(config.env.MEAL_REGISTRATION_LOG_CHANNEL_ID) as TextChannel,
+          lateMealRegistration: guild.channels.cache.get(config.env.LATE_MEAL_REGISTRATION_CHANNEL_ID) as TextChannel,
+          lateMealRegistrationLog: guild.channels.cache.get(config.env.LATE_MEAL_REGISTRATION_LOG_CHANNEL_ID) as TextChannel
+        };
+
+        // Add error notification channel if configured
+        if (config.env.ERROR_NOTIFICATION_CHANNEL_ID) {
+          channels.errorNotification = guild.channels.cache.get(config.env.ERROR_NOTIFICATION_CHANNEL_ID) as TextChannel;
+        }
+
+        // Validate channels
+        const missingChannels = Object.entries(channels)
+          .filter(([_, channel]) => !channel)
+          .map(([name]) => name);
+
+        if (missingChannels.length > 0) {
+          throw new Error(`Missing channels: ${missingChannels.join(', ')}`);
+        }
+
+        // Set channels in config
+        setDiscordChannels(channels);
+
+        logger.info(`Bot is running in ${config.isDevelopment ? 'development' : 'production'} mode`);
+      } catch (error) {
+        if (error instanceof Error) {
+          logger.error('Failed to set up Discord channels:', error);
+        } else {
+          logger.error('Failed to set up Discord channels with unknown error');
+        }
+      }
+    });
 
     // Handle process termination
     setupProcessHandlers(client);

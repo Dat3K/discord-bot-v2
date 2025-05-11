@@ -41,5 +41,22 @@
   },
   "database": {
     "filename": "bot_state.sqlite"
+  },
+  "timing": {
+    "regularRegistration": {
+      "startTime": "05:00",
+      "endTime": "03:00"
+    },
+    "lateMorningRegistration": {
+      "startTime": "05:00",
+      "endTime": "11:00"
+    },
+    "lateEveningRegistration": {
+      "startTime": "11:30",
+      "endTime": "18:15"
+    },
+    "developmentMode": {
+      "registrationDurationSeconds": 10
+    }
   }
 }
