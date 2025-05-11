@@ -26,7 +26,7 @@
       "id": 3,
       "title": "Create configuration system",
       "description": "Implement a configuration system using environment variables and JSON files",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         1

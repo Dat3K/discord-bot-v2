@@ -1,6 +1,6 @@
 # Task ID: 3
 # Title: Create configuration system
-# Status: pending
+# Status: done
 # Dependencies: 1
 # Priority: high
 # Description: Implement a configuration system using environment variables and JSON files
