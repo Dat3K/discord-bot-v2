@@ -26,5 +26,8 @@ node_modules/
 
 # Task files
 tasks.json
-tasks/ 
+tasks/
 node_modules
+
+# Database files
+data/
