@@ -28,14 +28,18 @@ async function main() {
     setupProcessHandlers(client);
 
     logger.info('Bot initialization complete');
-  } catch (error) {
-    logger.error('Failed to start bot:', error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      logger.error('Failed to start bot:', error);
+    } else {
+      logger.error('Failed to start bot with unknown error');
+    }
     process.exit(1);
   }
 }
 
 // Set up handlers for process termination
-function setupProcessHandlers(client: any) {
+function setupProcessHandlers(client: ReturnType<typeof createClient>) {
   const shutdown = () => {
     logger.info('Bot is shutting down...');
     disconnectClient(client);
@@ -44,12 +48,16 @@ function setupProcessHandlers(client: any) {
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
-  process.on('uncaughtException', (error) => {
+  process.on('uncaughtException', (error: Error) => {
     logger.error('Uncaught exception:', error);
     shutdown();
   });
-  process.on('unhandledRejection', (reason) => {
-    logger.error('Unhandled rejection:', reason);
+  process.on('unhandledRejection', (reason: unknown) => {
+    if (reason instanceof Error) {
+      logger.error('Unhandled rejection:', reason);
+    } else {
+      logger.error('Unhandled rejection with unknown reason');
+    }
   });
 }
 
