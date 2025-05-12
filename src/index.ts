@@ -3,6 +3,8 @@ import { registerEvents } from './events';
 import { logger } from './utils/logger';
 import config, { setDiscordChannels } from './config';
 import { TextChannel } from 'discord.js';
+import scheduler from './scheduler';
+import messageScheduler from './scheduler/messageScheduler';
 
 // Main function to start the bot
 async function main() {
@@ -51,6 +53,10 @@ async function main() {
         // Set channels in config
         setDiscordChannels(channels);
 
+        // Initialize scheduler
+        scheduler.initialize(client);
+        messageScheduler.initialize(client);
+
         logger.info(`Bot is running in ${config.isDevelopment ? 'development' : 'production'} mode`);
       } catch (error) {
         if (error instanceof Error) {
@@ -79,7 +85,14 @@ async function main() {
 function setupProcessHandlers(client: ReturnType<typeof createClient>) {
   const shutdown = () => {
     logger.info('Bot is shutting down...');
+
+    // Stop the scheduler
+    scheduler.stop();
+
+    // Disconnect from Discord
     disconnectClient(client);
+
+    logger.info('Shutdown complete');
     process.exit(0);
   };
 
