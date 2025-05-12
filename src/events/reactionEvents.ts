@@ -1,4 +1,5 @@
-import { Client, Events, MessageReaction, PartialMessageReaction, User, PartialUser, Message, PartialMessage } from 'discord.js';
+import { Client, Events, MessageReaction } from 'discord.js';
+import type { PartialMessageReaction, User, PartialUser } from 'discord.js';
 import { logger } from '../utils/logger';
 import { reactionData } from '../database';
 import { getCurrentTime } from '../utils/timeUtils';
@@ -125,7 +126,7 @@ async function handleReactionAdd(
           title: 'Reaction Added',
           description: `**User:** ${fullUser.tag} (${fullUser.id})\n**Message:** [Jump to Message](${message.url})\n**Reaction:** ${emoji}\n**Has Tracked Role:** ${hasRoleText}\n**Meal Type:** ${mealType || 'Unknown'}\n**Registration Type:** ${registrationType}`,
           color: 0x2ecc71, // Green
-          timestamp: new Date(timestamp)
+          timestamp: new Date(timestamp).toISOString()
         }]
       });
     }
@@ -193,7 +194,7 @@ async function handleReactionRemove(
           title: 'Reaction Removed',
           description: `**User:** ${fullUser.tag} (${fullUser.id})\n**Message:** [Jump to Message](${message.url})\n**Reaction:** ${emoji}\n**Has Tracked Role:** ${hasRoleText}\n**Meal Type:** ${mealType || 'Unknown'}\n**Registration Type:** ${registrationType}`,
           color: 0xe74c3c, // Red
-          timestamp: new Date(timestamp)
+          timestamp: new Date(timestamp).toISOString()
         }]
       });
     }
@@ -215,3 +216,4 @@ export default (client: Client): void => {
   // Handle reaction remove event
   client.on(Events.MessageReactionRemove, handleReactionRemove);
 };
+
