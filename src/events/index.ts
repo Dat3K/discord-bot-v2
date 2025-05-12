@@ -4,6 +4,7 @@ import errorEvent from './error';
 import reconnectingEvent from './reconnecting';
 import disconnectEvent from './disconnect';
 import roleEvents from './roleEvents';
+import reactionEvents from './reactionEvents';
 
 /**
  * Register all event handlers
@@ -15,4 +16,5 @@ export function registerEvents(client: Client): void {
   reconnectingEvent(client);
   disconnectEvent(client);
   roleEvents(client);
+  reactionEvents(client);
 }
