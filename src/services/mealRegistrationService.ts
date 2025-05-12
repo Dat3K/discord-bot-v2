@@ -3,14 +3,13 @@ import { logger } from '../utils/logger';
 import { messageScheduler, MessageTaskType } from '../scheduler/messageScheduler';
 import {
   getCurrentTime,
-  getNextOccurrence,
   addDuration,
   formatDateTime,
   DateTimeFormat,
   parseTimeString
 } from '../utils/timeUtils';
 import config from '../config';
-import { activeRegistrations, reactionData, userRegistrations } from '../database';
+import { activeRegistrations, reactionData } from '../database';
 import { getMembersWithRole, getTrackedRoleId } from '../utils/roleUtils';
 
 /**
@@ -65,7 +64,8 @@ class MealRegistrationService {
         logger.info('Development mode: Scheduling meal registration message in 10 seconds');
 
         const executeAt = addDuration(getCurrentTime(), { seconds: 10 }).toMillis();
-        const endAt = addDuration(getCurrentTime(), { seconds: config.json.timing?.developmentMode?.registrationDurationSeconds || 10 }).toMillis();
+        const endAt = addDuration(getCurrentTime(), { seconds: config.json.timing?.developmentMode?.registrationDurationSeconds || 5 }).toMillis();
+        logger.info(`Scheduled meal registration to end at ${formatDateTime(getCurrentTime().set({ millisecond: endAt }), DateTimeFormat.DATE_TIME)}`);
 
         this.scheduleMealRegistrationMessage(executeAt, endAt);
       } else {
@@ -215,7 +215,8 @@ class MealRegistrationService {
         logger.info('Development mode: Scheduling late morning registration message in 10 seconds');
 
         const executeAt = addDuration(getCurrentTime(), { seconds: 10 }).toMillis();
-        const endAt = addDuration(getCurrentTime(), { seconds: config.json.timing?.developmentMode?.registrationDurationSeconds || 10 }).toMillis();
+        const endAt = addDuration(getCurrentTime(), { seconds: config.json.timing?.developmentMode?.registrationDurationSeconds || 5 }).toMillis();
+        logger.info(`Scheduled late morning registration to end at ${formatDateTime(getCurrentTime().set({ millisecond: endAt }), DateTimeFormat.DATE_TIME)}`);
 
         this.scheduleLateRegistrationMessage(
           MessageTaskType.LATE_MORNING_REGISTRATION,
@@ -261,7 +262,8 @@ class MealRegistrationService {
         logger.info('Development mode: Scheduling late evening registration message in 20 seconds');
 
         const executeAt = addDuration(getCurrentTime(), { seconds: 20 }).toMillis();
-        const endAt = addDuration(getCurrentTime(), { seconds: config.json.timing?.developmentMode?.registrationDurationSeconds || 10 }).toMillis();
+        const endAt = addDuration(getCurrentTime(), { seconds: config.json.timing?.developmentMode?.registrationDurationSeconds || 5 }).toMillis();
+        logger.info(`Scheduled late evening registration to end at ${formatDateTime(getCurrentTime().set({ millisecond: endAt }), DateTimeFormat.DATE_TIME)}`);
 
         this.scheduleLateRegistrationMessage(
           MessageTaskType.LATE_EVENING_REGISTRATION,
@@ -355,7 +357,7 @@ class MealRegistrationService {
     channelId: string
   ): any {
     // Calculate the end time
-    const startTime = parseTimeString(startTimeString);
+    parseTimeString(startTimeString); // Parse but not used directly
     const endTime = parseTimeString(endTimeString);
 
     // Calculate the end timestamp

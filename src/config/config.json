@@ -56,7 +56,7 @@
       "endTime": "18:15"
     },
     "developmentMode": {
-      "registrationDurationSeconds": 10
+      "registrationDurationSeconds": 5
     }
   }
 }
