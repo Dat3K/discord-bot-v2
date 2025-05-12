@@ -5,6 +5,7 @@ import config, { setDiscordChannels } from './config';
 import { TextChannel } from 'discord.js';
 import scheduler from './scheduler';
 import messageScheduler from './scheduler/messageScheduler';
+import mealRegistrationService from './services/mealRegistrationService';
 
 // Main function to start the bot
 async function main() {
@@ -53,9 +54,10 @@ async function main() {
         // Set channels in config
         setDiscordChannels(channels);
 
-        // Initialize scheduler
+        // Initialize scheduler and services
         scheduler.initialize(client);
         messageScheduler.initialize(client);
+        mealRegistrationService.initialize(client);
 
         logger.info(`Bot is running in ${config.isDevelopment ? 'development' : 'production'} mode`);
       } catch (error) {

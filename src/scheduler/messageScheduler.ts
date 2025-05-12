@@ -7,6 +7,7 @@ import { getCurrentTime, formatDateTime, DateTimeFormat } from '../utils/timeUti
 import config from '../config';
 import { activeRegistrations } from '../database';
 import { handleSchedulerError, SchedulerErrorType } from './errorHandler';
+import { mealRegistrationService } from '../services/mealRegistrationService';
 
 // Define message task types
 export enum MessageTaskType {
@@ -36,6 +37,7 @@ export interface MessageTaskData {
   components?: any[]; // Discord.js message components
   endTime?: number; // For registration messages
   identifier?: string; // For tracking purposes
+  data?: any; // For custom data
 }
 
 /**
@@ -127,6 +129,22 @@ export class MessageScheduler {
     const data = task.data as MessageTaskData;
 
     try {
+      // Check if this is a custom task for registration end
+      if (data.type === MessageTaskType.CUSTOM && data.data && data.data.registrationIdentifier) {
+        // Process registration end
+        mealRegistrationService.processRegistrationEnd(data.data.registrationIdentifier)
+          .catch(error => {
+            handleSchedulerError(
+              SchedulerErrorType.TASK_EXECUTION,
+              `Error processing registration end for ${data.data.registrationIdentifier}`,
+              error instanceof Error ? error : new Error('Unknown error'),
+              task.id,
+              task
+            );
+          });
+        return;
+      }
+
       // Get the channel
       const channel = this.client.channels.cache.get(data.channelId) as TextChannel;
 
@@ -170,7 +188,7 @@ export class MessageScheduler {
           let footerText = data.embed.footer;
           if (data.endTime && footerText.includes('{endTime}')) {
             const endTime = getCurrentTime().set({ millisecond: data.endTime });
-            footerText = footerText.replace('{endTime}', formatDateTime(endTime, DateTimeFormat.TIME_ONLY));
+            footerText = footerText.replace('{endTime}', formatDateTime(endTime, DateTimeFormat.DATE_TIME));
           }
 
           embed.setFooter({ text: footerText });
@@ -213,6 +231,21 @@ export class MessageScheduler {
               });
 
               logger.info(`Registration message ${message.id} stored in database`);
+
+              // Add reactions to the message
+              if (data.type === MessageTaskType.MEAL_REGISTRATION) {
+                message.react(config.json.emojis.breakfast)
+                  .then(() => message.react(config.json.emojis.dinner))
+                  .catch(error => {
+                    logger.error(`Failed to add reactions to message ${message.id}:`, error);
+                  });
+              } else if (data.type === MessageTaskType.LATE_MORNING_REGISTRATION ||
+                         data.type === MessageTaskType.LATE_EVENING_REGISTRATION) {
+                message.react(config.json.emojis.late)
+                  .catch(error => {
+                    logger.error(`Failed to add late reaction to message ${message.id}:`, error);
+                  });
+              }
             } catch (dbError) {
               handleSchedulerError(
                 SchedulerErrorType.PERSISTENCE,
