@@ -6,6 +6,7 @@ import { TextChannel } from 'discord.js';
 import scheduler from './scheduler';
 import messageScheduler from './scheduler/messageScheduler';
 import mealRegistrationService from './services/mealRegistrationService';
+import stateRecoveryService from './services/stateRecoveryService';
 
 // Main function to start the bot
 async function main() {
@@ -57,6 +58,11 @@ async function main() {
         // Initialize scheduler and services
         scheduler.initialize(client);
         messageScheduler.initialize(client);
+
+        // Initialize state recovery service first to recover any active registrations
+        stateRecoveryService.initialize(client);
+
+        // Initialize other services
         mealRegistrationService.initialize(client);
 
         logger.info(`Bot is running in ${config.isDevelopment ? 'development' : 'production'} mode`);
